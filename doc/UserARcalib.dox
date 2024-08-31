@@ -1,38 +1,33 @@
-/*! \page UserARcalib Calibrating your camera for ARtoolkit
+/*! \page UserARcalib 为 ARtoolkit 校准你的相机
 
 
-Camera calibration consists of determining essential parameters of the optics and of the sensor. Once a precise
-calibration is achieved, modules such as \jvmod{DemoARtoolkit} can recover the exact location and orientation of a
-marker in 3D space.
+相机校准包括确定光学元件和传感器的基本参数。一旦实现精确校准，诸如 \jvmod{DemoARtoolkit} 之类的模块就可以恢复标记在 3D 空间中的准确位置和方向。
 
-JeVois includes a set of default calibration files for the standard sensor and optics.
+JeVois 包含一组用于标准传感器和光学器件的默认校准文件。
 
-You should consider running a calibration if:
-- you need very precise pose estimation
-- you have installed a different sensor in your JeVois camera
-- you have changed the lens to a different one (eg., 90 degrees field of view)
-- you have adjusted the lens
+如果出现以下情况，您应该考虑进行校准：
+- 您需要非常精确的姿势估计
+- 您在 JeVois 相机中安装了不同的传感器
+- 您已将镜头更改为不同的镜头（例如，90 度视野）
+- 您已调整镜头
 
-Note that calibration is dependent on image resolution. So the procedure described here should be repeated for every
-video resolution which you intend to use.
+请注意，校准取决于图像分辨率。因此，对于您打算使用的每种视频分辨率，都应重复此处描述的过程。
 
-Creating the virtual machine
+创建虚拟机 
 ----------------------------
 
-Start with a fresh Ubuntu 16.04 virtualbox.
+从全新的 Ubuntu 16.04 virtualbox 开始。
 
-Follow the instructions at http://jevois.org/doc/Virtualbox.html but with Ubuntu 16.04. Beware: you may have problems
-compiling ARtoolkit with later versions of Ubuntu.
+按照 http://jevois.org/doc/Virtualbox.html 上的说明进行操作，但要使用 Ubuntu 16.04。注意：使用更高版本的 Ubuntu 编译 ARtoolkit 可能会遇到问题。
 
-Make sure you reboot your host and install the USB device filter. You should get to the point where you can see video in
-`guvcview` when you connect your JeVois camera.
+确保重新启动主机并安装 USB 设备过滤器。连接 JeVois 相机后，您应该可以在“guvcview”中看到视频。
 
-Compiling ARtoolkit5
+编译ARtoolkit5 
 --------------------
 
-We will compile ARtoolkit5 natively in our virtual machine.
+我们将在我们的虚拟机中本地编译 ARtoolkit5。
 
-We follow the instructions at https://github.com/artoolkit/artoolkit5
+我们按照 https://github.com/artoolkit/artoolkit5 上的说明进行操作
 
 \code{.py}
 sudo apt install libopencv-dev build-essential g++ xorg libudev-dev freeglut3-dev git
@@ -47,87 +42,67 @@ git checkout cfe0a4f5daf1b2ce76fe9197a01ff85e310f6633
 make -j 96 # replace 96 by your number of CPU cores
 \endcode
 
-The program we will use should now be ready in `bin/calib_camera`
 
-Preparing your JeVois camera
+我们将要使用的程序现在应该在 `bin/calib_camera` 中准备好了
+
+准备您的 JeVois 相机 
 ----------------------------
 
-The camera calibration will just select the default video mode from the camera.
+相机校准只会从相机中选择默认的视频模式。
 
-To make sure the particular resolution is selected, edit \b videomappings.cfg on your JeVois camera to have only one
-mode. For example, using JeVois Inventor, go to the Config tab and select \b videomappings.cfg, then select all (CTRL-A)
-and delete (DEL) and finally just add one Pass Through mode. For example, to calibrate a modified JeVois camera using an
-optional 2MP OV2640 sensor at 1280x720:
+为确保选择了特定分辨率，请在 JeVois 相机上编辑 \b videomappings.cfg 以仅使用一种模式。例如，使用 JeVois Inventor，转到“配置”选项卡并选择 \b videomappings.cfg ，然后选择全部 (CTRL-A) 并删除 (DEL)，最后只添加一个直通模式。例如，要使用可选的 2MP OV2640 传感器在 1280x720 下校准经过修改的 JeVois 相机：
 
 
 \verbatim
 YUYV 1280 720 10.0 YUYV 1280 720 10.0 JeVois PassThrough
 \endverbatim
 
-Save to JeVois (CTRL-S) and confirm that you can see video after JeVois restarts.
+保存到 JeVois（CTRL-S）并确认 JeVois 重新启动后您就可以看到视频。
 
-Do this on another machine running JeVois Inventor (or quit your virtualbox first and run JeVois Inventor).
+在另一台运行 JeVois Inventor 的机器上执行此操作（或先退出虚拟机并运行 JeVois Inventor）。
 
 
-Printing the calibration pattern
+打印校准图案 
 --------------------------------
 
-We now turn to these instructions:
-https://github.com/artoolkit/artoolkit-docs/blob/master/2_Configuration/config_camera_calibration.md
+现在我们转向这些说明：https：//github.com/artoolkit/artoolkit-docs/blob/master/2_Configuration/config_camera_calibration.md
 
-We need to print a calibration chessboard. In the USA, we will use <b>artoolkit5/doc/patterns/Calibration\ chessboard\
-\(US\ Letter\).pdf</b> and an A4 version is also available. You can get those from
-http://jevois.org/data/artoolkit5-patterns.zip
+我们需要打印一个校准棋盘。在美国，我们将使用 <b>artoolkit5/doc/patterns/Calibration\ chessboard\ \(US\ Letter\).pdf</b>，并且还提供 A4 版本。您可以从 http://jevois.org/data/artoolkit5-patterns.zip 获取这些文件
 
-Make sure you print it at 100% scale.
+确保以 100% 的比例打印。
 
-Running the calibration program
+运行校准程序 
 -------------------------------
 
-Now back to our VirtualBox, we connect our JeVois camera configured with a single pass-through resolution and start
-`~/artoolkit5/bin/calib_camera`
+现在回到我们的 VirtualBox，我们连接配置了单通分辨率的 JeVois 相机并启动 `~/artoolkit5/bin/calib_camera`
 
-As instructed in the ARtoolkit calibration docs, tape the pattern down to a flat surface and confirm that each square is
-exactly 30mm x 30mm.
+按照 ARtoolkit 校准文档中的说明，将图案用胶带粘贴到平坦的表面上，并确认每个正方形正好是 30mm x 30mm。
 
-Then just follow the instructions of the ARToolkit calibration docs (duplicated here for convenience):
+然后只需按照 ARToolkit 校准文档的说明进行操作（为方便起见，此处重复）：
 
-- Capturing Calibration Images Calibration requires the capturing of a series of images. In the top-left corner of the
-  capture window is displayed the number of images captured so far.
+- 捕捉校准图像 校准需要捕捉一系列图像。捕捉窗口的左上角显示迄今为止捕捉的图像数量。
 
-- Point the camera at the chessboard grid, and the inner corners of the squares will be highlighted with 'X' marks and
-  numbered.
+- 将相机对准棋盘网格，方格的内角将以“X”标记突出显示并编号。
 
 \jvimg{calib_ARtoolkit.png, 30%}
 
 
-- When the camera can clearly see all the intermediate corners, the 'X' marks turn RED, and a calibration image can be
-  captured: A good view of the calibration board, ready to capture.
+- 当相机可以清楚地看到所有中间角时， 'X' 标记变为红色，并且可以捕获校准图像：校准板的良好视图，准备捕获。
 
-- If some of the corners are obscured by the edges of the camera frame, or poor lighting or reflection, the 'X' will be
-  GREEN, and no calibration image can be captured until the optical conditions are changed. A poor view of the
-  calibration board, NOT ready to capture.
+- 如果某些角落被相机框架的边缘遮挡，或者光线不足或反射较差，则 'X' 将为绿色，并且除非光学条件发生变化，否则无法捕获校准图像。校准板的视野不佳，无法捕获。
 
-- Once you have an image with all red 'X's, you can press the keyboard spacebar. The spacebar tab captures the video
-  frame augmented with red 'X' characters. The relative positions of the 'X' indicators on the captured frame are
-  calculated, recorded, written to standard out of the command-line window and the capture counter is incremented.
+- 一旦获得全是红色 'X' 的图像，就可以按键盘空格键。空格键选项卡会捕获带有红色 'X' 字符的视频帧。计算、记录捕获帧上“X”指示符的相对位置，将其写入命令行窗口的标准输出，并增加捕获计数器。
 
-- To obtain a good calibration for the camera, it is important to obtain images of the calibration board at a variety of
-  angles to the camera lens. Note that this involve holding the calibration board at different angles relative to the
-  camera, including upside-down.
+- 为了获得良好的相机校准效果，重要的是从相机镜头的各个角度获取校准板的图像。请注意，这需要将校准板以不同的角度相对于相机握住，包括倒置。
 
-- Once all the calibration images have been captured, that is, ten (ten is the default) presses of the spacebar, the
-  calibration data is tabulated and a distortion factor associated to the camera device is calculated. The tabulated
-  calibration data is written to standard out of the command-line window. At this point, the application prompts for a
-  filename to write the calibration data to.
+- 一旦捕获了所有校准图像，即按十次（默认为十次）空格键，校准数据就会被制成表格，并计算与相机设备相关的失真系数。制成表格的校准数据会从命令行窗口写入标准输出。此时，应用程序会提示输入要写入校准数据的文件名。
 
-Copying the files to JeVois
+将文件复制到 JeVois 
 ---------------------------
 
-Copy the calibration file to <b>JEVOIS:/share/camera/</b> on your camera, naming it exactly:
-<b>camera_para1280x720.dat</b> for 1280x720 resolution, or change the name for different resolutions.
+将校准文件复制到相机上的 <b>JEVOIS:/share/camera/</b>，并将其命名为：<b>camera_para1280x720.dat</b>（适用于 1280x720 分辨率），或者更改名称以适应不同的分辨率。
 
-Next time you run \jvmod{DemoARtoolkit} with that resolution, it will load the calibration file.
+下次使用该分辨率运行 \jvmod{DemoARtoolkit} 时，它将加载校准文件。
 
 */
 

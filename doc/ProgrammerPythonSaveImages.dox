@@ -1,97 +1,83 @@
-/*! \page ProgrammerPythonSaveImages Saving camera images to microSD using Python
+/*! \page ProgrammerPythonSaveImages 使用 Python 将相机图像保存到 microSD
 
-In this tutorial, we write a very simple module to just save images captured by the JeVois camera sensor to the microSD
-card inside JeVois. This can be useful, for example, to collect training data when developing a new machine vision
-algorithm. As you will see, this can be achieved in just a few minutes.
+在本教程中，我们编写了一个非常简单的模块，仅将 JeVois 相机传感器捕获的图像保存到 JeVois 内部的 microSD 卡中。这很有用，例如，在开发新的机器视觉算法时收集训练数据。如您所见，这只需几分钟即可实现。
 
-For this tutorial, you do not need to install any software (except for a video capture program, if you do not already
-have one): We will directly edit the Python code on the microSD card that is inside JeVois.
+对于本教程，您不需要安装任何软件（如果您还没有，则视频捕获程序除外）：我们将直接在 JeVois 内部的 microSD 卡上编辑 Python 代码。
 
-Preliminaries
+准备工作 
 -------------
 
-- Get the latest microSD image from [JeVois start](http://jevois.org/start) as this tutorial assumes \jvversion{1.5} or
-  later.
-- Review the \ref UserTutorials so you know how to:
-  + Flash the latest microSD image to a physical card
-  + Connect JeVois to a host computer and power it up
-  + Grab video from JeVois and select different resolutions
-  + Communicate with JeVois using a serial-over-USB link, and use the JeVois command-line interface
-- Be sure to go through the \ref Programmer to understand the basic concepts.
-- Go through \ref ProgrammerPython
-- And finally check out \ref ModulePythonTutorial
+- 从 [JeVois start](http://jevois.org/start) 获取最新的 microSD 映像，因为本教程假设 \jvversion{1.5} 或更高版本。
+- 查看 \ref UserTutorials ，了解如何：
+  + 将最新的 microSD 映像刷入物理卡
+  + 将 JeVois 连接到主机并启动
+  + 从 JeVois 抓取视频并选择不同的分辨率
+  + 使用串行 USB 链接与 JeVois 通信，并使用 JeVois 命令行界面
+- 请务必阅读 \ref Programmer 以了解基本概念。
+- 阅读 \ref ProgrammerPython
+- 最后查看 \ref ModulePythonTutorial
 
-Here, we will focus on step-by-step instructions for how to make all of this work.
+在这里，我们将重点介绍如何完成所有这些工作的逐步说明。
 
 Getting started
 ---------------
 
-- Connect JeVois to your host with the latest microSD image inside
+- 将 JeVois 连接到您的主机，其中包含最新的 microSD 映像
 
-- In this tutorial we will:
-  + Stop grabbing video, if you were using a video capture software on your host computer
-  + Instruct JeVois to export its microSD card as a virtual USB drive
-  + Browse the virtual USB drive on the host computer
-  + Create a new Python module on that USB drive using a text editor
-  + Eject the virtual USB drive. Upon eject, JeVois will restart
-  + When it is back online, connect to JeVois, load your new module, and start saving images to microSD
-  + Stop saving and export the microSD as a virtual flash drive again
-  + Get the saved images.
+- 在本教程中，我们将：
+  + 如果您在主机上使用视频捕获软件，则停止抓取视频
+  + 指示 JeVois 将其 microSD 卡导出为虚拟 USB 驱动器
+  + 浏览主机上的虚拟 USB 驱动器
+  + 使用文本编辑器在该 USB 驱动器上创建一个新的 Python 模块
+  + 弹出虚拟 USB 驱动器。弹出后，JeVois 将重新启动
+  + 当它重新上线时，连接到 JeVois，加载新模块，并开始将图像保存到 microSD
+  + 停止保存并再次将 microSD 导出为虚拟闪存驱动器
+  + 获取已保存的图像。
 
-- Below we go over these steps one at a time.
+- 下面我们一步步介绍这些步骤。
 
-Stop grabbing video
+停止抓取视频 
 -------------------
 
-Exporting the microSD inside JeVois as a virtual USB flash drive poses potential data consistency issues between the
-host and JeVois camera, hence JeVois currently requires that no machine vision module be loaded and no video be
-streaming during access to its microSD over USB.
+将 JeVois 内部的 microSD 导出为虚拟 USB 闪存驱动器会导致主机和 JeVois 相机之间出现潜在的数据一致性问题，因此 JeVois 目前要求在通过 USB 访问其 microSD 期间不加载任何机器视觉模块并且不传输视频。
 
-Thus, just close any video capture program before you attempt to export the microSD of JeVois over USB.
+因此，在尝试通过 USB 导出 JeVois 的 microSD 之前，请关闭任何视频捕获程序。
 
-Instruct JeVois to export its microSD card as a virtual USB drive
+指示 JeVois 将其 microSD 卡导出为虚拟 USB 驱动器 
 -----------------------------------------------------------------
 
-To export the microSD inside JeVois, send the command \c usbsd to JeVois over a serial link. You can do that by first
-connecting to JeVois using a serial terminal and then typing this command. For example, use the Arduino IDE to connect,
-as done in \ref UserArduinoIDE.
+要导出 JeVois 中的 microSD，请通过串行链路向 JeVois 发送命令 \c usbsd 。您可以先使用串行终端连接到 JeVois，然后输入此命令。例如，使用 Arduino IDE 进行连接，如 \ref UserArduinoIDE 中所述。
 
-Here, since we only want to give that one command to JeVois, we can also instead do:
-  - Linux: in a Linux terminal, type:
-    + `jevois-usbsd start` (to export it),
-    + `jevois-usbsd stop` (to eject and reboot JeVois).
-  - Mac OSX: `echo usbsd > /dev/cu.usbmodem*`
-  - Windows: FIXME anyone can contribute a short command? Just use a serial terminal like Termite, Arduino IDE, etc
-    for now.
+在这里，由于我们只想向 JeVois 发出一个命令，我们也可以改为执行以下操作：
+- Linux：在 Linux 终端中，键入：
+  + `jevois-usbsd start`（导出它），
+  + `jevois-usbsd stop`（弹出并重新启动 JeVois）。
+- Mac OSX：`echo usbsd > /dev/cu.usbmodem*`
+- Windows：FIXME 有人可以贡献一个简短的命令吗？现在只需使用串行终端，如 Termite、Arduino IDE 等。
 
-Browse the virtual USB drive on the host computer
+在主机上浏览虚拟 USB 驱动器 
 -------------------------------------------------
 
-Here is what the microSD inside JeVois looks like when exported to a Mac host computer:
+这是 JeVois 内部的 microSD 导出到 Mac 主机时的样子：
 
 \image html PythonSandbox2.png
 
-Create a new Python module on that USB drive using a text editor
+使用文本编辑器在该 USB 驱动器上创建一个新的 Python 模块 
 ----------------------------------------------------------------
 
-The conventions for creating a new module are as follows:
+创建新模块的约定如下：
 
-- create a directory <b>JEVOIS:/modules/Vendor/ModuleName</b> where
-  + \a Vendor is a vendor name, used to group modules written by the same person or organization together
-  + \a ModuleName is the name of your module
+- 创建目录 <b>JEVOIS:/modules/Vendor/ModuleName</b>，其中
+  + \a Vendor 是供应商名称，用于将由同一个人或组织编写的模块分组在一起
+  + \a ModuleName 是模块的名称
 
-  Here, let us create a new directory <b>JEVOIS:/modules/Test/SaveImages/</b>
+在这里，让我们创建一个新目录 <b>JEVOIS:/modules/Test/SaveImages/</b>
 
-- Then create a source code file which has the same file stem as the module's directory name, and in there create a
-  class with again the same name. For a module written in python, we thus create a new file
-  <b>JEVOIS:/modules/Test/SaveImages/SaveImages.py</b> using any text editor.
+- 然后创建一个源代码文件，该文件的文件主干与模块的目录名相同，并在其中创建一个具有相同名称的类。对于用 python 编写的模块，我们使用任何文本编辑器创建一个新文件 <b>JEVOIS:/modules/Test/SaveImages/SaveImages.py</b>。
 
-- As explained in \ref ProgrammerPython and \ref ModulePythonTutorial, here we just need to implement a Python class
-  named \b SaveImages, with a function called `processNoUSB()` in it which will receive the next image from the camera
-  sensor and will write it to disk, while outputing no video stream over USB (so the camera can work in standalone mode
-  with no host computer).
+- 正如 \ref ProgrammerPython 和 \ref ModulePythonTutorial 中所述，这里我们只需要实现一个名为 \b SaveImages 的 Python 类，其中有一个名为 `processNoUSB()` 的函数，它将从相机传感器接收下一个图像并将其写入磁盘，同时不通过 USB 输出视频流（因此相机可以在没有主机的情况下以独立模式工作）。
 
-- Write the module:
+- 编写模块：
 
 \code{.py}
 import libjevois as jevois
@@ -112,39 +98,36 @@ class SaveImages:
         self.frame += 1
 \endcode
 
-That is, we get the frame from the camera as an OpenCV image with BGR pixels, then use the OpenCV function `imwrite()`
-to save it to disk as a PNG file. We use <b>self.frame</b> as a counter to give each new image a new name.
+也就是说，我们从相机获取帧作为具有 BGR 像素的 OpenCV 图像，然后使用 OpenCV 函数 `imwrite()` 将其作为 PNG 文件保存到磁盘。我们使用 <b>self.frame</b> 作为计数器，为每个新图像赋予一个新名称。
 
-\note This module does not output any video, it just captures frames and saves them to microSD, with nothing to
-show. Have a look at the other Python tutorials for modules that also output video frames over USB.
+\note 此模块不输出任何视频，它只捕获帧并将其保存到 microSD，没有任何内容可显示。请查看其他 Python 教程，了解也通过 USB 输出视频帧的模块。
 
-Eject the virtual USB flash drive
+弹出虚拟 USB 闪存驱动器 
 ---------------------------------
 
-To stop exporting the microSD inside JeVois, just do a proper eject of that drive:
-- Linux: right click on its icon and select \b eject
-- Mac OSX: drag the drive's icon on your desktop to trash
-- Windows: safely remove USB drive.
+要停止导出 JeVois 中的 microSD，只需正确弹出该驱动器：
+- Linux：右键单击其图标并选择 \b eject
+- Mac OSX：将驱动器的图标拖到桌面上的垃圾箱
+- Windows：安全移除 USB 驱动器。
 
-When you eject the drive, JeVois will restart. You will see its LED blink.
+弹出驱动器后，JeVois 将重新启动。您将看到其 LED 闪烁。
 
 
-Connect to JeVois, load your new module, and start saving images to microSD
+连接到 JeVois，加载新模块，然后开始将图像保存到 microSD 
 ---------------------------------------------------------------------------
 
-Once JeVois is back online, connect to it, for example using the Arduino IDE, as done in \ref UserArduinoIDE.
+一旦 JeVois 重新上线，就连接到它，例如使用 Arduino IDE，如在 \ref UserArduinoIDE 中所做的那样。
 
-To load the module, we will use the `setmapping2` JeVois command (see \ref UserCli):
+要加载模块，我们将使用 `setmapping2` JeVois 命令（参见 \ref UserCli ）：
 
 \verbatim
 setmapping2 YUYV 320 240 30.0 Test SaveImages
 \endverbatim
 
-You can choose any resolution pixel format (here, YUYV), resolution (here, 320x240 pixels), and framerate (here, 30.0),
-that are supported by the JeVois camera sensor (see \ref PixelFormats and \ref VideoMapping for more info), namely:
+您可以选择 JeVois 摄像头传感器支持的任何分辨率像素格式（此处为 YUYV）、分辨率（此处为 320x240 像素）和帧速率（此处为 30.0）（有关更多信息，请参阅 \ref PixelFormats 和 \ref VideoMapping ），即：
 
-- Pixel formats: BAYER, YUYV, RGB565
-- Resolutions and frame rates:
+- 像素格式：BAYER、YUYV、RGB565
+- 分辨率和帧速率：
   + SXGA (1280 x 1024): up to 15 fps
   + VGA (640 x 480): up to 30 fps
   + CIF (352 x 288): up to 60 fps
@@ -153,61 +136,49 @@ that are supported by the JeVois camera sensor (see \ref PixelFormats and \ref V
   + QQVGA (160 x 120): up to 60 fps
   + QQCIF (88 x 72): up to 120 fps
 
-Finally, to start saving frames, we need to issue a:
+
+最后，要开始保存帧，我们需要发出：
 
 \verbatim
 streamon
 \endverbatim
 
-which instructs the camera sensor to start streaming video, after which the captured video frames will be sent to our
-module's `processNoUSB()` function.
+它指示摄像头传感器开始流式传输视频，之后捕获的视频帧将被发送到我们模块的 `processNoUSB()` 函数。
 
-\note Because this example is very simple, it does not do any buffering. If your images take a long time to compress to
-PNG, or your microSD is slow, you may not be able to sustain your desired frame rate. Any extra frames received from the
-camera sensor while your `processNoUSB()` function is still running on a previous frame will just safely be dropped. You
-may want to also check out the \jvmod{SaveVideo} module which can save video using a more complex multi-threaded
-buffering setup.
+\note 因为这个例子非常简单，所以它不进行任何缓冲。如果您的图像需要很长时间才能压缩为 PNG，或者您的 microSD 速度很慢，您可能无法维持所需的帧速率。当您的 `processNoUSB()` 函数仍在前一帧上运行时，从相机传感器接收到的任何额外帧都将被安全丢弃。您可能还想查看 \jvmod{SaveVideo} 模块，它可以使用更复杂的多线程缓冲设置保存视频。
 
-Stop saving and export the microSD as a virtual flash drive again
+停止保存并再次将 microSD 导出为虚拟闪存驱动器 
 -----------------------------------------------------------------
 
-When done with saving images, issue a
+保存完图像后，发出
 
 \verbatim
 streamoff
 \endverbatim
 
-and, to export the microSD as flash drive again, issue a
+要再次将 microSD 导出为闪存驱动器，请发出
 
 \verbatim
 usbsd
 \endverbatim
 
-Now browse <b>JEVOIS:/data/</b> for files named \a saveimagesXXX.png and enjoy! You can copy these files to your host
-computer, view them, delete them, etc as you would do with a regular USB flash drive.
+现在浏览 <b>JEVOIS:/data/</b> 查找名为 \a saveimagesXXX.png 的文件并尽情享受吧！您可以将这些文件复制到主机，查看它们、删除它们等，就像使用常规 USB 闪存驱动器一样。
 
 \image html SaveImages.png
 
-Autonomous operation
+自主运行 
 --------------------
 
-It is possible to configure JeVois to automatically start capturing and saving images as soon as it is powered on. To
-achieve this, edit the file <b>JEVOIS:/config/initscript.cfg</b> and basically add the commands, which we have entered
-manually above, into that file:
+可以将 JeVois 配置为在打开电源后立即自动开始捕获和保存图像。为此，请编辑文件 <b>JEVOIS:/config/initscript.cfg</b>，并将我们上面手动输入的命令添加到该文件中：
 
 \verbatim
 setmapping2 YUYV 320 240 30.0 Test SaveImages
 streamon
 \endverbatim
 
-<b>initscript.cfg</b> is automatically executed when the camera starts up. You can just power JeVois from a USB battery
-pack and have it save pictures when it is powered on.
+<b>initscript.cfg</b> 会在相机启动时自动执行。您只需使用 USB 电池组为 JeVois 供电，然后让它在开机时保存图片即可。
 
-\note Likely, when using such a setup, you will also want to just turn power off when you are done. This can give rise
-to corruption of the last or last few frames that were saved, as those may still be in the disk cache and in the process
-of being written to microSD as you remove power. This could also potentially corrupt the whole filesystem on the
-microSD, though JeVois is quite robust at recovering from abrupt power failures. Just keep the camera on for a little
-more time than you expect to get usable data, so that the last few frames would not be so important if they end up being
-corrupted.
+\note 类似地，使用此类设置时，您也希望在完成后关闭电源。这可能会导致保存的最后或最后几帧损坏，因为这些帧可能仍在磁盘缓存中，并且在您断电时正在写入 microSD。这还可能损坏 microSD 上的整个文件系统，尽管 JeVois 在从突然断电中恢复方面非常强大。只需让相机保持开启状态的时间比您预期的要长一点，即可获得可用数据，这样即使最后几帧被损坏，它们也不会那么重要。
 
 */
+

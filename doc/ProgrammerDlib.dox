@@ -1,32 +1,28 @@
-/*! \page ProgrammerDlib Creating a module with dependencies: Dlib face detector
+/*! \page ProgrammerDlib 创建具有依赖项的模块：Dlib 人脸检测器
 
-This tutorial walks through the steps of creating a C++ JeVois module that has some external dependencies -- here the
-excellent Dlib C++11 library of machine vision algorithms.
+本教程介绍创建具有一些外部依赖项的 C++ JeVois 模块的步骤——这里是优秀的 Dlib C++11 机器视觉算法库。
 
-Setting up
+配置  
 ----------
 
-- First go through the steps outlined in \ref ProgrammerSetup
+- 首先按照 \ref ProgrammerSetup 中列出的步骤进行操作
 
-- Since we just want to compile a new module, we do not need to re-compile \b jevois and \b jevoisbase, we just use
-  the pre-compiled versions provided by the JeVois Ubuntu packages. Thus, we only need to:
-  + Install Ubuntu package \b jevois-sdk-dev using instructions from http://jevois.usc.edu
-  + Use the script `jevois-create-module` provided by \b jevois-sdk-dev to create a new module from scratch.
-  + Compile the module using `rebuild-host.sh` and `rebuild-platform.sh` scripts that are in the module's directory.
+- 由于我们只想编译一个新模块，因此我们不需要重新编译 \b jevois 和 \b jevoisbase ，我们只需使用 JeVois Ubuntu 软件包提供的预编译版本。因此，我们只需要：
+  + 使用 http://jevois.usc.edu 上的说明安装 Ubuntu 软件包 \b jevois-sdk-dev
+  + 使用 \b jevois-sdk-dev 提供的脚本 `jevois-create-module` 从头开始创建一个新模块。
+  + 使用模块目录中的 `rebuild-host.sh` and `rebuild-platform.sh` 脚本编译模块。
 
-Creating the module
+创建模块
 -------------------
 
-We use the script `jevois-create-module` which will grab sample module code from GitHub, and will also immediately
-change names of classes and files to match our new module's name: usage is `jevois-create-module <VendorName>
-<ModuleName>`, so here let us just run:
+我们使用脚本 `jevois-create-module`，它将从 GitHub 获取示例模块代码，并且还将立即更改类和文件的名称以匹配我们新模块的名称：用法是 `jevois-create-module <VendorName> <ModuleName>`，所以这里我们只需运行：
 
 \verbatim
 cd
 jevois-create-module Tutorial FaceDetector
 \endverbatim
 
-you should now have the following:
+您现在应该有以下内容：
 \verbatim
 facedetector/
 ├── CMakeLists.txt
@@ -46,11 +42,11 @@ facedetector/
             └── screenshot1.png
 \endverbatim
 
-Pulling the dependency
+
+拉取依赖项 
 ----------------------
 
-Let's write a small shell script to get Dlib, so that others can use that script when they want to compile our
-module. We create <b>facedetector/download-dlib.sh</b> as follows:
+让我们编写一个小的 shell 脚本来获取 Dlib，以便其他人在想要编译我们的模块时可以使用该脚本。我们创建 <b>facedetector/download-dlib.sh</b>，如下所示：
 
 \code{.py}
 #!/bin/bash
@@ -69,111 +65,97 @@ tar jxvf dlib-${ver}.tar.bz2
 mv dlib-${ver} dlib
 \endcode
 
-This script will download Dlib with a given version, unpack, and install into <b>facedetector/dlib/</b>.
 
-Downloading a fixed version is usually better than downloading the latest version, as changes in the latest version may
-introduce incompatibilities with our module, which would confuse future users. When a new version of Dlib is available,
-we will download it, test it with our module, make any adjustments, and update this download script.
+该脚本将下载给定版本的 Dlib、解压并安装到 <b>facedetector/dlib/</b>。
 
-Run the script from inside directory \b facedetector by calling:
+下载修复版本通常比下载最新版本更好，因为最新版本的更改可能会导致与我们的模块不兼容，这会让未来的用户感到困惑。当 Dlib 的新版本可用时，我们将下载它，使用我们的模块进行测试，进行任何调整，并更新此下载脚本。
+
+通过调用以下命令从目录 \b facedetector 内部运行脚本：
 
 \code{.py}
 cd facedetector
 ./download-dlib.sh
 \endcode
 
-To make sure Dlib is automatically pulled and installed, we add the following line to both \b rebuild-host.sh and \b
-rebuild-platform.sh, somewhere before the \b make command is invoked:
+为了确保 Dlib 被自动拉取和安装，我们在 \b rebuild-host.sh 和 \b rebuild-platform.sh 中的某个地方添加了以下行，位于调用 \b make 命令之前：
 
 \code{.py}
 # Get dlib if not here:
 if [ ! -d dlib ]; then ./download-dlib.sh; fi
 \endcode
 
-Compiling the dependency
+
+编译依赖项 
 ------------------------
 
-We now turn to the docs of our dependency to try to understand how it should be compiled.
+我们现在转向依赖项的文档，尝试了解应如何编译它。
 
-We find two options at http://dlib.net/compile.html
-- with CMake, compiling Dlib as a sub-project
-- directly from the command-line without cmake
+我们在 http://dlib.net/compile.html 上找到了两个选项
+- 使用 CMake，将 Dlib 编译为子项目
+- 直接从命令行进行，无需 cmake
 
-After trying the first option, we could not make it work. But the second option worked fine. We simply add
-<b>dlib/all/source.cpp</b> as a new C++ file that needs to be compiled into our module. We also add \b dlib to our
-include path, and finally, after reading http://dlib.net/compile.html until the end, we add flag \b DLIB_NO_GUI_SUPPORT
-since JeVois has no display. We end up with the following modified \b CMakeLists.txt for our module:
+尝试了第一个选项后，我们无法让它工作。但第二个选项工作得很好。我们只需将 <b>dlib/all/source.cpp</b> 添加为需要编译到我们模块中的新 C++ 文件。我们还将 \b dlib 添加到我们的包含路径中，最后，在阅读 http://dlib.net/compile.html 直到最后之后，我们添加了标志 \b DLIB_NO_GUI_SUPPORT，因为 JeVois 没有显示。我们最终为我们的模块得到了以下修改后的 \b CMakeLists.txt：
 
 \code{.py}
 cmake_minimum_required(VERSION 3.1)
 
-## Set vendor names, our modules will be placed in a directory by that name under /jevois/modules:
+## 设置供应商名称，我们的模块将放置在 /jevois/modules 下该名称的目录中：
 set(JEVOIS_VENDOR "Tutorial")
 set(JEVOIS_CONFIG "/jevois/config" CACHE STRING "Path to JeVois config to use")
 
-## Include helper functions, config, etc from the JeVois install:
+## 从 JeVois 安装中包含辅助函数、配置等：
 set(CMAKE_MODULE_PATH ${JEVOIS_CONFIG})
 include(jevois_config)
 include(JeVois)
 
-## Set project name, detects compiler (which has been set by our helper module). Then set some compilation flags:
+## 设置项目名称，检测编译器（已由我们的辅助模块设置）。然后设置一些编译标志：
 project(facedetector)
 jevois_project_set_flags()
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
-## Setup our modules that are in src/Modules:
+## 设置 src/Modules 中的模块：
 jevois_setup_modules(src/Modules "")
 
-## Disable GUI support in Dlib:
+## 在 Dlib 中禁用 GUI 支持：
 add_definitions("-DDLIB_NO_GUI_SUPPORT")
 
 ## Include dlib include files:
 include_directories("dlib")
 
-## Add dlib source files (see http://dlib.net/compile.html):
+## 添加 dlib 源文件 (see http://dlib.net/compile.html):
 target_sources(FaceDetector PRIVATE dlib/dlib/all/source.cpp)
 
-## Add any link libraries for our module:
+## 为我们的模块添加任何链接库：
 target_link_libraries(FaceDetector ${JEVOIS_OPENCV_LIBS} opencv_imgproc opencv_core)
 
-## Install any shared resources (cascade classifiers, neural network weights, etc) in the share/ sub-directory:
+## 在 share/ 子目录中安装任何共享资源（级联分类器、神经网络权重等）：
 install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/share"
   DESTINATION "${JEVOIS_INSTALL_ROOT}" COMPONENT bin)
 
 ## Wrapping up:
-jevois_project_finalize()  # call this last in your CMakeLists.txt, will un-mount the live microSD if applicable
+jevois_project_finalize()  # 在您的 CMakeLists.txt 中最后调用此函数，如果适用，将卸载实时 microSD
 \endcode
 
-\note Have a look at the \b CMakeLists.txt of \b jevoisbase, available at
-https://github.com/jevois/jevoisbase/blob/master/CMakeLists.txt - it contains many examples of how to import different
-kinds of C++ and C dependencies into JeVois modules. Typically, we end up using the following CMake commands:
-- `include_directories()` to add directories that contain include files.
-- `target_sources()` to add source files that should be compiled. For complex dependencies with tons of source files,
-  usually we use shell commands to list them, see for example the ARToolkit or TensorFlow sections in the \b
-  CMakelists.txt of \b jevoisbase.
-- `target_link_libraries()` to add libraries that your module should be linked against.
-- `add_definitions()` if you need to set compiler flags for your dependency.
+\note 查看 \b jevoisbase 的 \b CMakeLists.txt ，可在 https://github.com/jevois/jevoisbase/blob/master/CMakeLists.txt 上找到 - 它包含许多有关如何将不同类型的 C++ 和 C 依赖项导入 JeVois 模块的示例。通常，我们最终会使用以下 CMake 命令：
+- `include_directories()` 添加包含包含文件的目录。
+- `target_sources()` 添加应编译的源文件。对于具有大量源文件的复杂依赖项，我们通常使用 shell 命令列出它们，例如，请参阅 \b jevoisbase 的 \b CMakelists.txt 中的 ARToolkit 或 TensorFlow 部分。
+- `target_link_libraries()` 添加模块应链接到的库。
+- `add_definitions()` 如果您需要为依赖项设置编译器标志。
 
-Writing the module
+编写模块 
 ------------------
 
-We are now ready to write the module.
+我们现在准备编写模块了。
 
-We edit <b>facedetector/src/Modules/FaceDetector.C</b> to include the face detection algorithm described in
-http://dlib.net/face_detection_ex.cpp.html
+我们编辑 <b>facedetector/src/Modules/FaceDetector.C</b> 以包含 http://dlib.net/face_detection_ex.cpp.html 中描述的人脸检测算法
 
-One thing that we need to resolve is how to get our images from the JeVois sensor into the Dlib image format. A quick
-web search reveals that Dlib provides functions to reinterpret (without copy) OpenCV images as Dlib images. So we will
-use that, for example as suggested at
-https://stackoverflow.com/questions/29118317/how-to-convert-mat-to-array2drgb-pixel
+我们需要解决的一件事是如何将 JeVois 传感器中的图像转换为 Dlib 图像格式。快速的网络搜索显示，Dlib 提供了将 OpenCV 图像重新解释（无需复制）为 Dlib 图像的功能。因此我们将使用它，例如 https://stackoverflow.com/questions/29118317/how-to-convert-mat-to-array2drgb-pixel 中建议的那样
 
-So we will grab into JeVois YUYV RawImage, convert to OpenCV RGB, and reinterpret that as Dlib RGB.
+因此，我们将抓取 JeVois YUYV RawImage，转换为 OpenCV RGB，并将其重新解释为 Dlib RGB。
 
-As far as output, let us just do a very simple layout for this module where we show the input video with boxes drawn
-around detected faces, and a little 24-pixel tall message area below to display the number of detections. So, we plan
-for 320x240 video capture from the sensor and 320x264 video output to USB.
+至于输出，我们只需为该模块做一个非常简单的布局，其中我们显示输入视频，并在检测到的人脸周围画上方框，并在下方画一个 24 像素高的小消息区域来显示检测次数。因此，我们计划从传感器捕获 320x240 视频，并将 320x264 视频输出到 USB。
 
-We end up with this module, which is very similar to many of the modules in \b jevoisbase:
+我们最终得到了这个模块，它与 \b jevoisbase 中的许多模块非常相似：
 
 \code
 // ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -203,16 +185,14 @@ We end up with this module, which is very similar to many of the modules in \b j
 
 // icon by dlib team
 
-//! Face Detection using the Dlib C++ machine vision library
-/*! Detect faces using the HOG (histogram of gradients) algorithm provided by dlib.
+//! 使用 Dlib C++ 机器视觉库进行人脸检测 
+/*! 使用 dlib 提供的 HOG（梯度直方图）算法检测人脸。
 
-    This module is heavily inspired from
-    http://dlib.net/face_detection_ex.cpp.html
+    该模块深受http://dlib.net/face_detection_ex.cpp.html的启发。
 
-    It is an example of how to use dlib with JeVois.
+    这是如何将 dlib 与 JeVois 结合使用的示例。
 
-    For more information about dlib, see http://dlib.net - Dlib provides a large number of high-quality C++11 algorithms
-    for machine vision, deep neural networks, image processing, and machine learning.
+    有关 dlib 的更多信息，请参阅 http://dlib.net - Dlib 为机器视觉、深度神经网络、图像处理和机器学习提供了大量高质量的 C++11 算法。
 
     @author Laurent Itti
 
@@ -256,7 +236,7 @@ class FaceDetector : public jevois::StdModule
       unsigned int const w = inimg.width, h = inimg.height;
       inimg.require("input", inimg.width, inimg.height, V4L2_PIX_FMT_YUYV);
 
-      // While we process it, start a thread to wait for out frame and paste the input into it:
+      // 在我们处理它时，启动一个线程来等待帧并将输入粘贴到其中：
       jevois::RawImage outimg;
       auto paste_fut = std::async(std::launch::async, [&]() {
           outimg = outframe.get();
@@ -280,10 +260,10 @@ class FaceDetector : public jevois::StdModule
       // Detect faces:
       std::vector<dlib::rectangle> dets = itsDetector(dlibimg);
       
-      // Wait for paste thread to complete and let camera know we are done processing the input image:
+      // 等待粘贴线程完成并让相机知道我们已完成输入图像的处理：
       paste_fut.get(); inframe.done();
 
-      // Draw the rectangles and send serial messages:
+      // 绘制矩形并发送串行消息：
       jevois::rawimage::writeText(outimg, "Detected " + std::to_string(dets.size()) + " faces",
                                   3, h+6, jevois::yuyv::White);
 
@@ -297,28 +277,29 @@ class FaceDetector : public jevois::StdModule
       std::string const & fpscpu = timer.stop();
       jevois::rawimage::writeText(outimg, fpscpu, 3, h - 13, jevois::yuyv::White);
       
-      // Send the output image with our processing results to the host over USB:
+      // 通过 USB 将包含处理结果的输出图像发送到主机：
       outframe.send();
     }
 };
 
-// Allow the module to be loaded as a shared object (.so) file:
+// 允许将模块作为共享对象 (.so) 文件加载：
 JEVOIS_REGISTER_MODULE(FaceDetector);
 
 \endcode
 
-Compiling for host
+为主机编译 
 ------------------
 
-Let us make sure Dlib compiles and links correctly and that our algorithm works by first compiling and running on host.
+让我们通过首先在主机上编译和运行来确保 Dlib 能够正确编译和链接，并且我们的算法能够正常工作。
 
-From inside the \b facedetector directory, we simply type:
+在 \b facedetector 目录中，我们只需输入：
 
 \code{.py}
 ./rebuild-host.sh
 \endcode
 
-and get an output like:
+并得到如下输出：
+
 
 \verbatim
 itti@iLab0:~/facedetector$ ./rebuild-host.sh 
@@ -428,37 +409,35 @@ Install the project...
 -- Installing: /jevois/share/README.txt
 \endverbatim
 
-So we had a few warnings within Dlib, but everything compiled fine. We are ready to test on host.
+因此，我们在 Dlib 中遇到了一些警告，但一切都编译正常。我们准备在主机上进行测试。
 
-Testing on host
+在主机上测试 
 ---------------
 
-- Before we can test on host, we need to add a video mapping for our module, with the resolutions our module
-expects. For that, we type:
+- 在主机上进行测试之前，我们需要为模块添加视频映射，并使用模块所需的分辨率。为此，我们输入：
 
 \code{.py}
 sudo jevois-add-videomapping YUYV 320 264 15.0 YUYV 320 240 15.0 Tutorial FaceDetector
 \endcode
 
-which adds an entry at the end of <b>/jevois/config/videomappings.cfg</b> on your host computer.
+它会在主机上的 <b>/jevois/config/videomappings.cfg</b> 末尾添加一个条目。
 
-We also edit <b>src/Modules/FaceDetector/postinstall</b> with that video mapping. The \b postinstall script will be used
-by the JeVois camera when we upload our module to it later.
+我们还使用该视频映射编辑 <b>src/Modules/FaceDetector/postinstall</b>。稍后我们将模块上传到 JeVois 相机时，该 \b postinstall 脚本将被使用。
 
-- Now plug in a regular webcam to your host computer (not a JeVois camera)
+- 现在将普通网络摄像头插入主机（不是 JeVois 摄像头）
 
-- and start
+- 然后开始
 
 \code{.py}
 jevois-daemon
 \endcode
 
-- We need to find out which video mapping number was assigned to our module, for that we type:
+- 我们需要找出分配给我们模块的视频映射编号，为此我们输入：
 \verbatim
 listmappings
 \endverbatim
 
-  and we get a long list that includes \b FaceDetector in it. On our particular install, 
+  我们得到了一个包含 \b FaceDetector 的长列表。在我们的特定安装中，
 \verbatim
    ...
    38 - OUT: YUYV 320x286 @ 30fps CAM: YUYV 320x240 @ 30fps MOD: JeVois:DemoQRcode C++
@@ -467,45 +446,40 @@ listmappings
    ...
 \endverbatim
 
-- We now quit jevois-daemon by sending it command \b quit
+- 我们现在通过发送命令 \b quit 来退出 jevois-daemon
 
-- And we start it again, this time requesting videomapping number 40 that we found above:
+- 我们再次启动它，这次请求我们上面找到的视频映射编号 40：
 \code{.py}
 jevois-daemon --videomapping=40
 \endcode
 
-- Here it is!
+- Here it is!！
 
 \image html dlib1.png
 
-Running on platform
+运行平台 
 --------------------
 
-Let's now cross-compile and run our module on the JeVois camera.
+现在让我们在 JeVois 相机上交叉编译并运行我们的模块。
 
-- We are going to use the \b jvpkg method as it is the easiest for single modules. In this method, we cross-compile the
-  module and pack it into a .jvpkg archive (which is just a zip file), then copy that package to
-  <b>JEVOIS:/packages/</b> on the microSD of the JeVois camera. JeVois will unpack and install the package next time it
-  starts up.
+- 我们将使用 \b jvpkg 方法，因为它对于单个模块来说是最简单的。在此方法中，我们交叉编译模块并将其打包到 .jvpkg 存档（这只是一个 zip 文件）中，然后将该包复制到 JeVois 相机的 microSD 上的 <b>JEVOIS:/packages/</b>。JeVois 将在下次启动时解压并安装该包。
 
-- Check that <b>src/Modules/FaceDetector/postinstall</b> contains the video mapping our module needs, it should look
-  like this:
+- 检查 <b>src/Modules/FaceDetector/postinstall</b> 是否包含模块所需的视频映射，它应该如下所示：
 \verbatim
 #!/bin/sh
-# This script is executed once after the module is installed by JeVois if it was added to the jevois/packages/ directory
-# of the microSD card as a .jvpkg file. The script is deleted from the microSD card after execution.
+# 如果模块以 .jvpkg 文件的形式添加到 microSD 卡的 jevois/packages/ 目录中，则 JeVois 安装模块后会执行此脚本一次。执行后，
+# 脚本将从 microSD 卡中删除。
 #
-# The caller script will set the current directory to the location of this script before launching the script.
+# 调用者脚本将在启动脚本之前将当前目录设置为此脚本的位置。
 
-# Add our video mappings to the main mappings file:
+# 将我们的视频映射添加到主映射文件：
 jevois-add-videomapping YUYV 320 264 15.0 YUYV 320 240 15.0 Tutorial FaceDetector
 
 # Example of a simple message:
 echo "FaceDetector is now installed"
 \endverbatim
 
-- To compile into a \b jvpkg package, we just run `rebuild-platform.sh` with no extra option. Output should look
-  roughly like this:
+- 要编译成 \b jvpkg 包，我们只需运行 `rebuild-platform.sh`，无需额外选项。输出应该大致如下：
 \verbatim
 itti@iLab0:~/facedetector$ ./rebuild-platform.sh 
 -- JeVois version 1.9.0
@@ -615,57 +589,43 @@ Install the project...
 -- Installing: /lab/itti/facedetector/jvpkg/share/README.txt
 \endverbatim
 
-\note Make sure JeVois software versions on your development machine and on your microSD card exactly match, otherwise
-your new module will fail to load. Here, for example, we see from our run of `rebuild-platform.sh` that we are using \b
-jevois-sdk-dev version 1.9.0. To check the version running on your microSD card, start JeVois Inventor and look at the
-bottom status bar when the camera is detected.
+\note 确保开发机器和 microSD 卡上的 JeVois 软件版本完全匹配，否则新模块将无法加载。例如，从运行 `rebuild-platform.sh` 中可以看到，我们使用的是 \b jevois-sdk-dev 版本 1.9.0。要检查 microSD 卡上运行的版本，请启动 JeVois Inventor 并在检测到相机时查看底部状态栏。
 
 
-- The module has been cross-compiled for the JeVois processor and the resulting files have been copied to
-  <b>~/facedetector/jvpkg/</b>, where they are ready to be packaged into a single JeVois package file that can later be
-  copied to microSD and run on the smart camera.
+- 该模块已针对 JeVois 处理器进行交叉编译，并且生成的文件已复制到 <b>~/facedetector/jvpkg/</b>，在那里它们可以打包成单个 JeVois 包文件，稍后可以复制到 microSD 并在智能相机上运行。
 
-  To create the package, we run:
+  要创建包，我们运行：
   \code{.py}
 cd pbuild
 make jvpkg
 cd ..
-  \endcode
-  
-  and we obtain a file <b>~/facedetector/Tutorial_facedetector.jvpkg</b>
+  \endcode 
+  然后我们得到一个文件<b>~/facedetector/Tutorial_facedetector.jvpkg</b>
 
-- Let's copy the file to our microSD. Either insert the microSD card into your desktop, or export it live from your
-  connected JeVois camera as explained in \ref UserUSBSD
+- 让我们将文件复制到我们的 microSD。您可以将 microSD 卡插入您的桌面，也可以按照 \ref UserUSBSD 中的说明从连接的 JeVois 相机实时导出
 
-  Then copy \b Tutorial_facedetector.jvpkg into <b>JEVOIS:/packages/</b> on the microSD.
+  然后将 \b Tutorial_facedetector.jvpkg 复制到 microSD 上的 <b>JEVOIS:/packages/</b> 中。
 
-- Cleanly eject the card and restart JeVois. Upon restart, the camera will unpack and install our module. It will also
-  add our video mapping for it from the contents of our \b postinstall file.
+- 干净地弹出卡并重新启动 JeVois。重新启动后，相机将解压并安装我们的模块。它还将从我们的 \b postinstall 文件的内容中添加我们的视频映射。
 
-- Let's fire up JeVois Inventor and find our new module:
+- 让我们启动 JeVois Inventor 并找到我们的新模块：
 
 \jvimg{dlib2.png, 70%}
 
-- Bingo, our Dlib-powered face detector is running on our JeVois camera!
+- 宾果，我们的由 Dlib 驱动的面部检测器正在我们的 JeVois 相机上运行！
 
 \jvimg{dlib3.png, 70%}
 
-Going further
+进一步 
 -------------
 
-- Change the icon in <b>src/Modules/FaceDetector/icon.png</b> to a better one. Recommended size is 128x128. If you want
-  to round the corners of your icon, you can use our script at
-  https://github.com/jevois/jevois/blob/master/scripts/round-image-corners.sh
+- 将 <b>src/Modules/FaceDetector/icon.png</b> 中的图标更改为更好的图标。建议尺寸为 128x128。如果您想将图标的边角弄圆，可以使用我们的脚本 https://github.com/jevois/jevois/blob/master/scripts/round-image-corners.sh
 
-- Dlib contains a lot of high-quality algorithms. Have a look at their examples and port some to JeVois.
+- Dlib 包含许多高质量算法。查看它们的示例并将一些移植到 JeVois。
 
-- Yet, this algorithm is not the fastest nor most robust face detector available on JeVois (indeed, it seems to be using
-  only one CPU core). Have a look at \jvmod{DetectionDNN} and \jvmod{PyDetectionDNN} for the OpenCV face detection
-  algorithm. Dlib does provide quite powerful detection of facial landmarks and face matching, though.
+- 然而，该算法并不是 JeVois 上速度最快、最强大的人脸检测器（事实上，它似乎只使用一个 CPU 核心）。请查看 \jvmod{DetectionDNN} 和 \jvmod{PyDetectionDNN} 了解 OpenCV 人脸检测算法。不过，Dlib 确实提供了相当强大的面部特征检测和面部匹配功能。
 
-- This module has been integrated into the standard JeVois distribution; it is available in github repo \b jevoisextra
-  available at https://github.com/jevois/jevoisextra and is available on the standard microSD cards after JeVois version
-  1.9.1
+- 该模块已集成到标准 JeVois 发行版中；它可以在 github repo \b jevoisextra 中使用，网址为 https://github.com/jevois/jevoisextra，并且可以在 JeVois 版本 1.9.1 之后的标准 microSD 卡上使用
 
 */
 

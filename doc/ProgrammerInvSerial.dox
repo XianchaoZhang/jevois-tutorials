@@ -1,67 +1,49 @@
-/*! \page ProgrammerInvSerial Sending serial message outputs to an Arduino or robot
+/*! \page ProgrammerInvSerial 向 Arduino 或机器人发送串行消息输出
 
-In addition to producing video outputs, JeVois machine vision modules can send message over serial ports, for example to
-inform an Arduino or other robotic controller of what JeVois is seeing.
+除了产生视频输出之外，JeVois 机器视觉模块还可以通过串行端口发送消息，例如告知 Arduino 或其他机器人控制器 JeVois 所看到的内容。
 
-Serial communication types
+串行通信类型 
 --------------------------
 
-JeVois distinguishes between two types of serial communications:
+JeVois 区分两种类型的串行通信：
 
-1) <b>serlog:</b> For log messages (error messages, notices to users, etc). Log messages are categorized into severity
-tiers, and always start with `DBG` (for debug level), `INF` (info level), `ERR` (error level), or `FTL` (fatal error
-level). Log messages are intended for human consumption. They would typically be turned on during algorithm development
-and debugging, then turned off during production use.
+1) <b>serlog：</b>用于日志消息（错误消息、用户通知等）。日志消息分为严重性等级，并且始终以 `DBG` (for debug level), `INF` (info level), `ERR` (error level), or `FTL` (fatal error level) 开头。日志消息供人类使用。它们通常在算法开发和调试期间打开，然后在生产使用期间关闭。
 
-2) <b>serout:</b> For text-based outputs intended to be consumed by a machine (e.g., coordinates of an object detected
-by JeVois, to send to an Arduino).
+2）<b>serout：</b>用于机器使用的基于文本的输出（例如，JeVois 检测到的物体的坐标，发送到 Arduino）。
 
-The assignment of actual ports, such as hardware 4-pin connector vs serial-over-USB port, to \p serlog and \p serout is
-controlled by parameters, detailed below. The assignment is very flexible, for example, you can decide to send \p serlog
-messages to both the 4-pin hardware serial port and to the serial-over-USB port, or or to no port, or to just one port,
-etc while sending \p serout messages to the hardware 4-pin serial port only, or all ports, no ports, etc.
+实际端口（例如硬件 4 针连接器与 USB 串行端口）到 \p serlog 和 \p serout 的分配由参数控制，详情如下。分配非常灵活，例如，您可以决定将 \p serlog 消息发送到 4 针硬件串行端口和 USB 串行端口，或者不发送到任何端口，或者只发送到一个端口等，而将 \p serout 消息仅发送到硬件 4 针串行端口，或者发送到所有端口，不发送到任何端口等。
 
-In JeVois Inventor, at the top of the \b Console tab, toggle buttons are available to allow you to send loge messages to
-nowhere, serial-over-USB port, 4-pin port, or both, and likewise for module output messages.
+在 JeVois Inventor 中，在 \b Console 选项卡的顶部，可以使用切换按钮将日志消息发送到任何地方、串行 USB 端口、4 针端口或两者，模块输出消息也是如此。
 
-See \ref UserCli for more information.
+有关更多信息，请参阅 \ref UserCli 。
 
 Setting up
 ----------
 
-Here, we will start from where we ended in \ref ProgrammerInvTimer: a simple ArUco tag detector written in Python +
-OpenCV using JeVois Inventor.
+在这里，我们将从 \ref ProgrammerInvTimer 中结束的地方开始：一个使用 JeVois Inventor 以 Python + OpenCV 编写的简单 ArUco 标签检测器。
 
-If you have not yet done so, create a new module called \b Hello now, as follows:
+如果你还没有这样做，请立即创建一个名为 \b Hello 的新模块，如下所示：
 
-- Select <b>New Python Module...</b> from the pull-down menu of JeVois Inventor (or press `CTRL-N`).
+- 从 JeVois Inventor 的下拉菜单中选择 <b>New Python Module...</b> （或按 `CTRL-N`）。
 
-- Fill in the details as shown below:
+- 填写如下所示的详细信息：
 
-  \jvimg{invhello1.png, 40%}
+\jvimg{invhello1.png, 40%}
 
-See \ref ProgrammerInvHello for more details.
+有关更多详细信息，请参阅 \ref ProgrammerInvHello 。
 
-Trying it out
+尝试一下 
 -------------
 
-The JeVois core provides the following helper functions available in Python:
+JeVois 核心提供了以下 Python 中可用的辅助函数：
 
-- `jevois.LDEBUG()`, `jevois.LINFO()`, `jevois.LERROR()`, and `jevois.LFATAL()` to send messages of various severity to
-  the serlog channel.
-  + Note that `LDEBUG` level is disabled at compile-time by default. So, you should not use it unless you have
-    recompiled the JeVois core from source and enabled it.
-  + Note that `jevois.LFATAL()` also throws an exception after it sends the message. So you should only use it in cases
-    where an error has occurred which prevents you from going further (as is usually the case for exceptions: throw an
-    exception when the postcondition of your function cannot be achieved; here, the postcondition is that we have sent a
-    video frame to USB depicting results of our machine vision work). JeVois core will catch the exception and display
-    it in the video stream.
+- `jevois.LDEBUG()`、`jevois.LINFO()`、`jevois.LERROR()` 和 `jevois.LFATAL()` 用于向 serlog 通道发送各种严重程度的消息。
+  + 请注意，默认情况下，`LDEBUG` 级别在编译时被禁用。因此，除非您已从源代码重新编译 JeVois 核心并启用它，否则不应使用它。
+  + 请注意，`jevois.LFATAL()` 在发送消息后也会引发异常。因此，您只应在发生错误而无法继续操作的情况下使用它（通常出现异常的情况：当无法实现函数的后置条件时引发异常；此处，后置条件是我们已经将一个视频帧发送到 USB，描述我们的机器视觉工作的结果）。JeVois 核心将捕获异常并将其显示在视频流中。
 
-- A helper function `jevois.sendSerial()` to help you send machine vision result strings to either the 4-pin serial port
-  of JeVois, or to the serial-over-USB port.  To which port the messages will be sent to is determined by the \b serout
-  parameter, as explained above.
+- 辅助函数 `jevois.sendSerial()` 可帮助您将机器视觉结果字符串发送到 JeVois 的 4 针串行端口或串行 USB 端口。消息将发送到哪个端口由 \b serout 参数决定，如上所述。
 
-From the previous tutorial, we start with this code:
+从上一个教程开始，我们从以下代码开始：
 
 \code{.py}
 import libjevois as jevois
@@ -86,30 +68,22 @@ class Hello:
       outframe.sendCv(img)
 \endcode
 
-Let us add code to send information about each detected ArUco maker to our serout serial ports. To keep it simple in
-this tutorial let us first just focus on what was detected (ArUco ID numbers) and we will later focus on where those
-were detected (coordinates of corners).
 
-First, we need to get an idea of what type that `ids` variable returned by the ArUco module's `detectMarkers()` function
-is. The OpenCV docs just say OutputArray, and in C++ it should be a vector of unsigned integers.
+让我们添加代码，将每个检测到的 ArUco 制造商的信息发送到我们的 serout 串行端口。为了在本教程中保持简单，我们首先只关注检测到的内容（ArUco ID 号），然后我们将关注检测到的位置（角坐标）。
 
-To check that, let us add a line to our code, just after we get the `ids`, that will send some debug message to the
-jevois console:
+首先，我们需要了解 ArUco 模块的 `detectMarkers()` 函数返回的 `ids` 变量是什么类型。OpenCV 文档只说 OutputArray，而在 C++ 中它应该是无符号整数的向量。
+
+为了检查这一点，让我们在获得“ids”之后在代码中添加一行，它将向 jevois 控制台发送一些调试消息：
 
 \verbatim
 jevois.LINFO('ids type is {}'.format(type(ids)))
 \endverbatim
 
-and then we switch to the \b Console tab of JeVois Inventor. Toggling \b USB on for log messages informs us that:
+然后我们切换到 JeVois Inventor 的 \b Console 选项卡。切换 \b USB 以查看日志消息会告诉我们：
 
 \jvimg{invserial1.png, 70%}
 
-depending on whether we are looking at some ArUco (then it is a numpy ndarray), or not (then NoneType). Welcome to
-Python and dynamic typing I guess... Indeed, when developing code in Python + OpenCV, most of my time is spent trying to
-figure out what the data type may be of the various results returned by OpenCV functions. Let us delete that LINFO line
-now and get to parsing these ids. We need to first detect whether the `ids` is of type None, and, if not, we should be
-able to iterate over the ndarray. After some more fiddling around we insert 3 new lines of code just after the call to
-`drawDetectedMarkers()`:
+取决于我们是否正在查看一些 ArUco（那么它就是一个 numpy ndarray），或者不是（那么就是 NoneType）。我想欢迎来到 Python 和动态类型……事实上，在使用 Python + OpenCV 开发代码时，我大部分时间都花在试图弄清楚 OpenCV 函数返回的各种结果的数据类型。现在让我们删除该 LINFO 行并开始解析这些 id。我们首先需要检测“ids”是否为 None 类型，如果不是，我们应该能够迭代 ndarray。经过一些摆弄之后，我们在调用 `drawDetectedMarkers()` 之后插入 3 行新代码：
 
 \code{.py}
 import libjevois as jevois
@@ -139,26 +113,27 @@ class Hello:
       outframe.sendCv(img)
 \endcode
 
-Switching to the \b Console, and toggling serial outputs to USB on, we can see our messages, when JeVois is pointed
-towards some ArUco markers:
+
+切换到 \b Console ，并将串行输出切换到 USB，当 JeVois 指向一些 ArUco 标记时，我们可以看到我们的消息：
 
 \jvimg{invserial2.png, 70%}
 
-Going further
+进一步 
 -------------
 
-Try to parse and send the coordinates as well!
+尝试解析并发送坐标！
 
-For further reading:
+进一步阅读：
 
 - \ref ProgrammerPython
 - \ref ModulePythonTutorial
 - \ref ProgrammerTutorials
 
-For tutorials on how to write Arduino or Python code to receive and decode messages sent by JeVois, see:
+有关如何编写 Arduino 或 Python 代码来接收和解码 JeVois 发送的消息的教程，请参阅：
 
 - \ref UserParseSerial
 - \ref UserPanTilt
 - \ref UserRobotCar
 
 */
+

@@ -1,90 +1,78 @@
-/*! \page UserUSBSD Live access to contents of the microSD inside JeVois
+/*! \page UserUSBSD 实时访问 JeVois 内部 microSD 的内容
 
 
 \jvversion{1.1}
 
-For user convenience, JeVois allows users to access the contents of the microSD card inside the camera live, while the
-JeVois smart camera is running.
+为了方便用户，JeVois允许用户在 JeVois 智能相机运行时实时访问相机内部 microSD 卡的内容。
 
-\note Note that since June 2018 it may be easier to use \ref JeVoisInventor.  The instructions below do not require
-JeVois Inventor are are provided in case you do not want to use the Inventor.
+\note 请注意，自 2018 年 6 月起，使用 \ref JeVoisInventor 可能会更容易。以下说明不需要 JeVois Inventor，以防您不想使用 Inventor。
 
-Getting started
-===============
+入门 
+================
 
-- Review the instructions in \ref MicroSD
-- Connect JeVois to a host computer
+- 查看 \ref MicroSD 中的说明
+- 将 JeVois 连接到主机
 
-Starting microSD access from the JeVois command-line interface
-==============================================================
+从 JeVois 命令行界面开始访问 microSD 
+=====================================================================
 
-When JeVois starts, by default it does not expose its microSD card to the host computer. Users need to request access to
-the microSD contents explicitly.
+JeVois 启动时默认不会向主机公开其 microSD 卡，用户需要明确请求访问 microSD 内容。
 
-Since being able to switch through various vision modules while changing the contents of the microSD poses some
-potential data consistency issues, for now, we have restricted file access over USB to only work while not streaming
-video. Likewise, a reboot of the JeVois camera is necessary to allow it to use any new or modified files from th ehost
-computer.
+由于能够在更改 microSD 内容的同时切换各种视觉模块可能会带来一些潜在的数据一致性问题，因此目前，我们已限制通过 USB 的文件访问，仅在不流式传输视频时才有效。同样，需要重新启动 JeVois 相机才能允许它使用主机上的任何新文件或修改过的文件。
 
-To instruct JeVois to expose its microSD to the host computer as a virtual USB flash drive:
+要指示 JeVois 将其 microSD 作为虚拟 USB 闪存驱动器公开给主机：
 
-- Connect to JeVois over the hardware serial port (4-pin connector) or over a serial-over-USB connection. See the
-  following to help you with that:
+- 通过硬件串行端口（4 针连接器）或通过 USB 串行连接连接到 JeVois。请参阅以下内容以帮助您：
   + \ref USBserialLinux
   + \ref USBserialWindows
   + \ref USBserialMac
   + \ref UserCli
   + \ref UserSerial
-  + User tutorial \ref UserArduinoIDE
+  + 用户教程 \ref UserArduinoIDE
 
-- Send the following command to the JeVois command-line interface:
+- 向 JeVois 命令行界面发送以下命令：
   \verbatim
   usbsd
-  \endverbatim
-  You will notice that a new USB flash drive is detected by your host computer.
+  \endverbatim 
+  您会注意到主机检测到了一个新的 USB 闪存驱动器。
 
-- Add/modify/remove files. This includes:
-  + modify configuration or parameter files in \b JEVOIS:/config
-  + edit a module written in Python, under \b JEVOIS:/modules
-  + add any data, e.g., training images for the ObjectDetect module
-  + retrieve any data, e.g., video files recorded by JeVois, under \b JEVOIS:/data
+- 添加/修改/删除文件。这包括：
+  + 修改 \b JEVOIS:/config 中的配置或参数文件
+  + 编辑 \b JEVOIS:/modules 下用 Python 编写的模块
+  + 添加任何数据，例如 ObjectDetect 模块的训练图像
+  + 检索 \b JEVOIS:/data 下的任何数据，例如 JeVois 录制的视频文件
 
-- When you are done, properly eject the virtual USB drive (drag to trash, click eject button, etc). JeVois will detect
-  this and will automatically restart and then be able to use the new or modified files. You should see the following on
-  the JeVois LED:
-  + Blinks off - shutdown complete
-  + Solid green - restarting
-  + Orange blink - camera sensor detected
-  + Solid orange: ready for action
+- 完成后，正确弹出虚拟 USB 驱动器（拖到垃圾箱、单击弹出按钮等）。JeVois 将检测到此情况并自动重新启动，然后可以使用新文件或修改后的文件。您应该在 JeVois LED 上看到以下内容：
+  + Blinks off - 关机完成
+  + 常亮绿色 - 重新启动
+  + 橙色闪烁 - 检测到摄像头传感器
+  + 常亮橙色：准备就绪
 
-Using shortcut shell command jevois-usbsd
-=========================================
+使用快捷 shell 命令 jevois-usbsd 
+============================================
 
 \jvversion{1.3}
 
-Under Linux, the \b jevois package provides the command `jevois-usbsd` in <b>/usr/bin</b> of the host computer, which
-can be executed directly in any terminal on the host computer (as opposed to being run in the JeVois command-line
-interface after opening some serial terminal to it). Use it as follows:
+在 Linux 下，\b jevois 软件包在主机的 <b>/usr/bin</b> 中提供了命令 `jevois-usbsd`，该命令可以在主机的任何终端中直接执行（而不是在打开某个串行终端后在 JeVois 命令行界面中运行）。使用方法如下：
 
 \verbatim
 jevois-usbsd start
 \endverbatim
 
-Starts exporting the microSD inside JeVois to the host computer.
+开始将 JeVois 里面的 microSD 导出到主机。
 
 \verbatim
 jevois-usbsd stop
 \endverbatim
 
-Properly ejects the previously exported virtual flash drive and reboots JeVois.
+正确弹出先前导出的虚拟闪存驱动器并重新启动 JeVois。
 
-\note `jevois-usbsd` is a simple shell script. Feel free to look at it. You may be able to create equivalents of that
-script for Mac and Windows. If so, please contribute them so that others can enjoy your scripts!
+\note `jevois-usbsd` 是一个简单的 shell 脚本。请随意查看。您可能能够为 Mac 和 Windows 创建该脚本的等效版本。如果可以，请贡献它们，以便其他人可以享受您的脚本！
 
-\note On Mac, you can try a simple `echo usbsd > /dev/cu.usbmodem*` and you should see the virtual USB flash drive \b
-JEVOIS appear. Just drag it to trash to eject.
+\note 在 Mac 上，您可以尝试简单的 `echo usbsd > /dev/cu.usbmodem*`，然后您应该会看到虚拟 USB 闪存驱动器 \b JEVOIS 出现。只需将其拖到垃圾箱即可弹出。
 
-\image html usbsd-mac.png Exporting the JeVois microSD to a Mac host using a simple command in the Mac terminal.
+\image html usbsd-mac.png 使用 Mac 终端中的简单命令将 JeVois microSD 导出到 Mac 主机。
 
 
 */
+

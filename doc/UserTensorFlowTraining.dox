@@ -1,68 +1,52 @@
-/*! \page UserTensorFlowTraining Training custom TensorFlow networks for JeVois
+/*! \page UserTensorFlowTraining 为 JeVois 训练自定义 TensorFlow 网络
 
-This tutorial will show you how to train TensorFlow deep neural networks using your own collection of images and object
-categories, and how to run the trained network on the processor inside the JeVois smart camera. It closely follows the
-steps of the tutorial [TensorFlow for poets](https://kiosk-dot-codelabs-site.appspot.com/codelabs/tensorflow-for-poets/)
-developed by the TensorFlow team, adding a few steps to get the trained network working on JeVois.
+本教程将向您展示如何使用您自己的图像和对象类别集合来训练 TensorFlow 深度神经网络，以及如何在 JeVois 智能相机内的处理器上运行经过训练的网络。它严格遵循由 TensorFlow 团队开发的教程 [诗人的 TensorFlow](https://kiosk-dot-codelabs-site.appspot.com/codelabs/tensorflow-for-poets/) 的步骤，并添加了一些步骤以使经过训练的网络在 JeVois 上运行。
 
-\image html UserTF-roses.png Our network trained on 5 different kinds of flowers correctly recognizes roses.
+\image html UserTF-roses.png 我们的网络经过 5 种不同花朵的训练，能够正确识别玫瑰。
 
-Pre-requisites
-==============
+先决条件 
+===============
 
-- Make sure you download \jvversion{1.15.0} or later from http://jevois.org/start and flash it to microSD.
+- 确保从 http://jevois.org/start 下载 \jvversion{1.15.0} 或更高版本并将其刷入 microSD。
 
-- You need a Linux, Windows or Mac host computer (we used Ubuntu 20.04), onto which you will install and run TensorFlow
-  for network training.
+- 您需要一台 Linux、Windows 或 Mac 主机（我们使用 Ubuntu 20.04），您将在其上安装并运行 TensorFlow 进行网络训练。
 
-- You need to be generally familiar software installation procedures, running programs, etc for your host computer.
+- 您需要熟悉主机的软件安装程序、运行程序等。
 
-Plan of attack
-==============
+攻击计划 
+===============
 
-- Like in TensorFlow for poets, we will start with a MobileNet network (a small but high performing image recognition
-  network) pre-trained on ImageNet (a large dataset with 1.2 million images in 1000 different object categories). This
-  will save a lot of time compared to training a blank network from scratch.
+- 就像诗人使用的 TensorFlow 一样，我们将从 MobileNet 网络（一个小型​​但性能很高的图像识别网络）开始，该网络在 ImageNet（一个包含 1000 个不同对象类别的 120 万幅图像的大型数据集）上进行预训练。与从头开始训练空白网络相比，这将节省大量时间。
 
-- We will install the latest TensorFlow on the host computer.
+- 我们将在主机上安装最新的 TensorFlow。
 
-- We will setup a collection of training images in several different categories.
+- 我们将设置几个不同类别的训练图像集合。
 
-- We will do transfer learning and fine-tune the pre-trained network on our collection of images, switching from the
-  default 1000 object categories to a different number of categories available in our collection of images. This is
-  performed on the fast host computer.
+- 我们将进行迁移学习，并在我们的图像集合上微调预先训练好的网络，从默认的 1000 个对象类别切换到我们图像集合中可用的不同数量的类别。此操作在快速主机上执行。
 
-- We will optimize it for inference and convert it to TensorFlow Lite (flatbuffer) so that it can be loaded and run on
-  JeVois.
+- 我们将对其进行推理优化，并将其转换为 TensorFlow Lite（flatbuffer），以便可以在 JeVois 上加载和运行。
 
-- We will copy the converted network to JeVois microSD card.
+- 我们将转换后的网络复制到 JeVois microSD 卡。
 
-- And finally we will run it from within the existing \jvmod{TensorFlowEasy} JeVois module.
+- 最后，我们将从现有的 \jvmod{TensorFlowEasy} JeVois 模块中运行它。
 
-- If all goes well, you should be able to complete all steps in about 30 minutes.
+- 如果一切顺利，您应该能够在大约 30 分钟内完成所有步骤。
 
-Detailed steps
-==============
+详细步骤
+===============
 
-Below are details on how to train and deploy your own deep network for JeVois.
+以下是有关如何为 JeVois 训练和部署自己的深度网络的详细信息。
 
-The first few steps will follow closely the TensorFlow for poets tutorial. We recommend that you look at it as you also
-follow the steps outlined here, as it provides additional details not duplicated here.
+前几个步骤将严格遵循 TensorFlow for poets 教程。我们建议您在遵循此处概述的步骤的同时查看该教程，因为它提供了此处未重复的额外详细信息。
 
-Install the latest TensorFlow
+安装最新的 TensorFlow 
 -----------------------------
 
-Follow the instructions at https://www.tensorflow.org/install/
+按照 https://www.tensorflow.org/install/ 上的说明进行操作
 
-We are going to use the pip install method for TensorFlow 1.15. On
-Ubuntu 20.04, we did the following for an install with no GPU support
-(which is shown here as it is much easier than a full install with GPU
-support). We used the VirtualEnv installation method and python3 (see
-https://www.tensorflow.org/install for more details):
+我们将使用 pip 安装方法安装 TensorFlow 1.15。在 Ubuntu 20.04 上，我们执行了以下操作以进行不支持 GPU 的安装（此处显示此操作是因为它比支持 GPU 的完整安装容易得多）。我们使用 VirtualEnv 安装方法和 python3（有关更多详细信息，请参阅 https://www.tensorflow.org/install）：
 
-First, TensorFlow 1.15 requires python 3.7, but Ubuntu 20.04 ships
-with python 3.8. So we first need to install python 3.7 on our
-machine (see https://stackoverflow.com/questions/61430166/python-3-7-on-ubuntu-20-04):
+首先，TensorFlow 1.15 需要 Python 3.7，但 Ubuntu 20.04 附带 Python 3.8。因此，我们首先需要在我们的机器上安装 Python 3.7（请参阅 https://stackoverflow.com/questions/61430166/python-3-7-on-ubuntu-20-04）：
 
 \code{.py}
 sudo add-apt-repository ppa:deadsnakes/ppa
@@ -70,7 +54,7 @@ sudo apt-get update
 sudo apt-get install python3.7 python3.7-venv
 \endcode
 
-Now we can proceed with the TensorFlow installation, just making sure we invoke python3.7:
+现在我们可以继续安装 TensorFlow，只需确保调用 python3.7：
 
 \code{.py}
 cd
@@ -83,8 +67,8 @@ python3 --version # should return 3.7.8
 
 \endcode
 
-Once activated, the shell prompt changes to show you the name of your VirtualEnv. We proceed as follows (from
-https://www.tensorflow.org/install/pip):
+
+一旦激活，shell 提示符就会发生变化，显示 VirtualEnv 的名称。我们按如下方式进行操作（来自 https://www.tensorflow.org/install/pip）：
 
 \code{.py}
 pip install --upgrade pip
@@ -96,19 +80,11 @@ python3 -c "import numpy; print(numpy.__version__)" # we got 1.19.1 when writing
 pip install --upgrade tensorflow==1.15
 \endcode
 
-Verify the install:
 
-\code{.py}
-python -c "import tensorflow as tf;print(tf.reduce_sum(tf.random.normal([1000, 1000])))"
-
-# No error and returns: Tensor("Sum:0", shape=(), dtype=float32)
-\endcode
-
-Get the TensorFlow for poets code
+获取诗人的 TensorFlow 代码 
 ---------------------------------
 
-We now follow the steps of the TensorFlow for poets tutorial at
-https://codelabs.developers.google.com/codelabs/tensorflow-for-poets/#1
+我们现在按照 https://codelabs.developers.google.com/codelabs/tensorflow-for-poets/#1 上的 TensorFlow for poets 教程的步骤进行操作
 
 \code{.py}
 git clone https://github.com/googlecodelabs/tensorflow-for-poets-2
@@ -116,14 +92,13 @@ git clone https://github.com/googlecodelabs/tensorflow-for-poets-2
 cd tensorflow-for-poets-2
 \endcode
 
-Download training images (or create your own collection)
+
+下载训练图像（或创建自己的集合） 
 --------------------------------------------------------
 
-We need to have a collection of images that we will use for training. The images should be organized under a number of
-directories, where each directory is the name of a given object category.
+我们需要一组用于训练的图像。这些图像应该组织在多个目录下，每个目录都是给定对象类别的名称。
 
-Let us just use the sample images from https://kiosk-dot-codelabs-site.appspot.com/codelabs/tensorflow-for-poets/#2 to
-set the ideas, but you can of course use your own images instead:
+让我们仅使用 https://kiosk-dot-codelabs-site.appspot.com/codelabs/tensorflow-for-poets/#2 中的示例图像来设置想法，但你当然也可以使用自己的图像：
 
 \code{.py}
 curl http://download.tensorflow.org/example_images/flower_photos.tgz | tar xz -C tf_files
@@ -131,13 +106,14 @@ curl http://download.tensorflow.org/example_images/flower_photos.tgz | tar xz -C
 ls tf_files/flower_photos
 \endcode
 
-You should see:
+
+您应该看到：
 
 \code{.py}
 daisy  dandelion  LICENSE.txt  roses  sunflowers  tulips
 \endcode
 
-and under each directory (daisy, dandelion, etc) we have a number of JPEG images which are pictures of that object:
+在每个目录（daisy, dandelion, 等）下，我们都有许多 JPEG 图像，它们是该对象的图片：
 
 Category   | Number of images
 -----------|-----------------
@@ -147,19 +123,17 @@ roses      | 641
 sunflowers | 699
 tulips     | 799
 
-If you want to add more categories, or use different categories, just follow the same organization principle:
+如果您想添加更多类别，或使用不同的类别，只需遵循相同的组织原则：
 
-- one directory under <b>tf_files/yourphotos/</b> for each category
-- in each directory, any number of JPEG pictures of objects in that category
+- 每个类别在 <b>tf_files/yourphotos/</b> 下有一个目录
+- 每个目录中都有该类别中任意数量的对象的 JPEG 图片
 
 Also see https://kiosk-dot-codelabs-site.appspot.com/codelabs/tensorflow-for-poets/#2
 
-Configuring MobileNet
+配置 MobileNet 
 ---------------------
 
-We proceed as outlined in https://kiosk-dot-codelabs-site.appspot.com/codelabs/tensorflow-for-poets/#3 and we will use a
-MobileNet with compression factor 0.5 and input size 128x128, as this should run at about 30 frames/s in the JeVois
-\jvmod{TensorFlowEasy} module:
+我们按照 https://kiosk-dot-codelabs-site.appspot.com/codelabs/tensorflow-for-poets/#3 中概述的步骤进行，并使用压缩系数为 0.5 且输入大小为 128x128 的 MobileNet，因为它应该在 JeVois \jvmod{TensorFlowEasy} 模块中以大约 30 帧/秒的速度运行：
 
 \code{.py}
 IMAGE_SIZE=128
@@ -169,10 +143,10 @@ ARCHITECTURE="mobilenet_0.50_${IMAGE_SIZE}"
 tensorboard --logdir tf_files/training_summaries &
 \endcode
 
-Then start training:
 
-\note Be sure to check https://kiosk-dot-codelabs-site.appspot.com/codelabs/tensorflow-for-poets/#3 to get the latest
-version of the command below, as the exact syntax used sometimes changes with new versions of TensorFlow.
+然后开始训练：
+
+\note 请务必检查 https://kiosk-dot-codelabs-site.appspot.com/codelabs/tensorflow-for-poets/#3 以获取以下命令的最新版本，因为所使用的确切语法有时会随着 TensorFlow 的新版本而发生变化。
 
 \code{.py}
 python -m scripts.retrain \
@@ -186,17 +160,14 @@ python -m scripts.retrain \
   --image_dir=tf_files/flower_photos
 \endcode
 
-After 500 training steps, which here just took a few minutes, we get an accuracy of 86.5% in our particular run (your
-results will vary slightly).
+经过 500 个训练步骤（这里只花了几分钟），我们在特定运行中获得了 86.5% 的准确率（您的结果会略有不同）。
 
-Using the trained model with TensorFlow on the host computer
---------------------------------------------------------------
+在主机上使用 TensorFlow 使用训练好的模型 
+-------------------------------------------------------------
 
-We proceed as outlined in https://kiosk-dot-codelabs-site.appspot.com/codelabs/tensorflow-for-poets/#4 and then
-https://kiosk-dot-codelabs-site.appspot.com/codelabs/tensorflow-for-poets/#5
+我们按照 https://kiosk-dot-codelabs-site.appspot.com/codelabs/tensorflow-for-poets/#4 和 https://kiosk-dot-codelabs-site.appspot.com/codelabs/tensorflow-for-poets/#5 中概述的步骤进行
 
-Let's test whether our trained model can now recognize our different types of flowers. We run the trained model on one
-image from our training set. This is expected to work very well since that image has been used for training:
+让我们测试一下我们训练过的模型现在是否可以识别不同类型的花朵。我们在训练集中的一张图像上运行训练过的模型。由于该图像已用于训练，因此预计效果会很好：
 
 \code{.py}
 python -m scripts.label_image --input_width=${IMAGE_SIZE} --input_height=${IMAGE_SIZE} \
@@ -204,7 +175,7 @@ python -m scripts.label_image --input_width=${IMAGE_SIZE} --input_height=${IMAGE
     --image=tf_files/flower_photos/daisy/21652746_cc379e0eea_m.jpg
 \endcode
 
-You should get something like this (actual numbers will vary):
+你应该得到类似这样的结果（实际数字会有所不同）：
 
 \verbatim
 Evaluation time (1-image): 0.176s
@@ -216,29 +187,23 @@ roses (score=0.00001)
 tulips (score=0.00000)
 \endverbatim
 
-Which means the network thinks that this image of a daisy indeed is a daisy with 99.01% confidence, or it could be a
-dandelion with 0.7% confidence, etc
 
-Deploying the trained model to JeVois
+这意味着网络认为这幅雏菊图像确实是一朵雏菊，置信度为 99.01%，或者可能是一朵蒲公英，置信度为 0.7%，等等
+
+将训练好的模型部署到 JeVois 
 -------------------------------------
 
-We are done with the basic TensorFlow for poets tutorial. Let us now deploy the model to run on the JeVois smart
-camera. For that, we will convert it to the mobile-optimized TensorFlow Lite format.
+我们完成了诗人基础的 TensorFlow 教程。现在让我们部署模型以在 JeVois 智能相机上运行。为此，我们将把它转换为针对移动设备优化的 TensorFlow Lite 格式。
 
-We will follow some of the steps of now deprecated [TensorFlow for Poets 2:
-TFLite](https://clmirror.storage.googleapis.com/codelabs/tensorflow-for-poets-2-tflite/index.html).
-But this time we will skip some steps which are irrelevant to JeVois (installing an Android app, etc).
+我们将遵循现已弃用的 [TensorFlow for Poets 2: TFLite](https://clmirror.storage.googleapis.com/codelabs/tensorflow-for-poets-2-tflite/index.html) 中的一些步骤。但这次我们将跳过一些与 JeVois 无关的步骤（安装 Android 应用等）。
 
-After our retraining above, two files were created:
+经过上述重新训练后，创建了两个文件：
 
-- <b>tf_files/retrained_graph.pb</b> is the retrained model
+- <b>tf_files/retrained_graph.pb</b> 是重新训练的模型
 
-- <b>tf_files/retrained_labels.txt</b> are the category names used during retraining (note that internally TensorFlow
-  uses a category number, which is then mapped to a name using this file as key. It is hence important that you do not
-  modify that file or change the order of entries in it, etc).
+- <b>tf_files/retrained_labels.txt</b> 是重新训练期间使用的类别名称（请注意，TensorFlow 内部使用类别编号，然后使用此文件作为键将其映射到名称。因此，重要的是不要修改该文件或更改其中条目的顺序等）。
 
-We start by optimizing the model for inference, and then we just convert the model to TensorFlow Lite format (.tflite
-file). As of August, 2020 (and TensorFlow 1.15), we we should use the \c tflite_convert utility, as follows:
+我们首先优化模型以进行推理，然后将模型转换为 TensorFlow Lite 格式（.tflite 文件）。截至 2020 年 8 月（和 TensorFlow 1.15），我们应该使用 \c tflite_convert 实用程序，如下所示：
 
 \code{.py}
 tflite_convert \
@@ -253,8 +218,7 @@ tflite_convert \
   --input_data_type=FLOAT
 \endcode
 
-We are now ready to deploy the final model to our JeVois camera. Insert your JeVois microSD into your host computer and
-check that it is detected. Then copy the model and labels files to it:
+我们现在准备将最终模型部署到我们的 JeVois 相机。将您的 JeVois microSD 插入主机并检查是否检测到它。然后将模型和标签文件复制到其中：
 
 \code{.py}
 # Check that the card was properly detected:
@@ -271,52 +235,43 @@ cp tf_files/jevois_model.tflite /media/${USER}/JEVOIS/share/tensorflow/flowers/m
 cp tf_files/retrained_labels.txt /media/${USER}/JEVOIS/share/tensorflow/flowers/labels.txt
 \endcode
 
-Optional: if you want your new model to be loaded by default when \jvmod{TensorFlowEasy} is loaded: edit
-<b>/media/${USER}/JEVOIS/modules/JeVois/TensorFlowEasy/params.cfg</b> and add:
+
+可选：如果您希望在加载 \jvmod{TensorFlowEasy} 时默认加载新模型：编辑 <b>/media/${USER}/JEVOIS/modules/JeVois/TensorFlowEasy/params.cfg</b> 并添加：
 
 \verbatim
 netdir=flowers
 foa=128 128
 \endverbatim
 
-and comment out any other settings in that file so that the one you just added for flowers is the only uncommented one
-in the whole file.
+并注释掉该文件中的任何其他设置，以便刚刚为花朵添加的设置是整个文件中唯一未注释的设置。
 
-Insert the microSD into JeVois and connect it to your host computer, then use JeVois Inventor, or launch
-\jvmod{TensorFlowEasy} by selecting <b>YUYV 320x308</b> resolution in guvcview or any other video capture software:
+将 microSD 插入 JeVois 并将其连接到主机，然后使用 JeVois Inventor，或者通过在 guvcview 或任何其他视频捕获软件中选择 <b>YUYV 320x308</b> 分辨率启动 \jvmod{TensorFlowEasy}：
 
 \code{.py}
 guvcview -f YUYV -x 320x308
 \endcode
 
-If you did not edit <b>params.cfg</b> above, you need to manually select your new network by connecting to the JeVois
-command line interface and issuing:
+如果您没有编辑上面的 <b>params.cfg</b>，则需要通过连接到 JeVois 命令行界面并发出以下命令来手动选择新网络：
 \verbatim
 setpar netdir flowers
 \endverbatim
 
-Point your JeVois camera to the different kinds of flowers we have trained it for (or to pictures of those from
-<b>tf_files/flower_photos/</b>) and see how well it can recognize them!
+将您的 JeVois 相机对准我们训练过的不同种类的花朵（或来自 <b>tf_files/flower_photos/</b> 的图片），看看它能多好地识别它们！
 
-\image html UserTF-roses.png Our network correctly recognizes roses.
+\image html UserTF-roses.png 我们的网络正确识别了玫瑰。
 
-\image html UserTF-sunflowers.jpg Our network correctly recognizes sunflowers.
+\image html UserTF-sunflowers.jpg 我们的网络正确识别了向日葵。
 
-Note that we did not train a negative or background category in this tutorial. So the model is likely to detect flowers
-when looking at other things, just because the only things it now knows about the world are those 5 types of flowers we
-have trained it on.
+请注意，我们在本教程中没有训练负面或背景类别。因此，模型在查看其他事物时很可能会检测到花朵，因为它现在对世界的唯一了解就是我们训练它的那 5 种花朵。
 
-\image html UserTF-car.jpg Our network incorrectly classifies a car (not among its possible output labels) as roses.
+\image html UserTF-car.jpg 我们的网络错误地将汽车（不在其可能的输出标签之中）归类为玫瑰。
 
-Next steps
-==========
+下一步 
+===========
 
-- Try it yourself with your own pictures!
+- 用你自己的照片亲自尝试一下！
 
-- Investigate quantization. The steps outlined above yield a floating-point network, which is slower than a quantized
-  network. The \c tflite_convert utility should be able to produce a quantized network for JeVois, but we have not yet
-  fully figured out how (some issues with normalization and ranges of values). A good start may be here:
-  https://github.com/tensorflow/tensorflow/blob/master/tensorflow/lite/g3doc/r1/convert/cmdline_examples.md in the
-  section about quantization.
+- 调查量化。上面概述的步骤会产生一个浮点网络，它比量化网络慢。\c tflite_convert 实用程序应该能够为 JeVois 生成量化网络，但我们尚未完全弄清楚如何生成（一些与规范化和值范围有关的问题）。一个好的开始可能在这里：https://github.com/tensorflow/tensorflow/blob/master/tensorflow/lite/g3doc/r1/convert/cmdline_examples.md 中关于量化的部分。
 
 */
+

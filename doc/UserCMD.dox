@@ -1,57 +1,52 @@
-/*! \page UserCMD Sending simple commands to JeVois directly from any host terminal
+/*! \page UserCMD 直接从主机终端向 JeVois 发送简单命令
 
 \jvversion{1.3}
 
-Sometimes, opening a serial terminal to connect to JeVois may seem like a lot of work if one just wishes to send one
-simple command or a short sequence of commands to JeVois.
+有时，如果只想向 JeVois 发送一个简单的命令或一小段命令序列，打开串行终端连接到 JeVois 似乎需要做很多工作。
 
-Instead, you can use the shortcut command `jevois-cmd` (Linux only for now).
+相反，您可以使用快捷命令 `jevois-cmd` （目前仅限 Linux）。
 
-\note Note that since June 2018 it may be easier to use \ref JeVoisInventor.  The instructions below do not require
-JeVois Inventor are are provided in case you do not want to use the Inventor.
+\note 请注意，自 2018 年 6 月起，使用 \ref JeVoisInventor 可能会更容易。以下说明不需要 JeVois Inventor，以防您不想使用 Inventor。
 
-Getting started
-===============
+入门 
+================
 
-- Connect JeVois to a host computer
-- Review \ref UserCli to get an idea of which commands you can send to JeVois
+- 将 JeVois 连接到主机
+- 查看 \ref UserCli 以了解可以向 JeVois 发送哪些命令
 
-Using shortcut shell command jevois-cmd
-=======================================
+使用快捷 shell 命令 jevois-cmd 
+==========================================
 
 \jvversion{1.3}
 
 
-Under Linux, the \b jevois package provides the command `jevois-cmd` in <b>/usr/bin</b> of the host computer, which
-can be executed directly in any terminal on the host computer (as opposed to being run in the JeVois command-line
-interface after opening some serial terminal to it). Use it as follows:
+在 Linux 下，\b jevois 软件包在主机的 <b>/usr/bin</b> 中提供了命令 `jevois-cmd`，该命令可以在主机的终端中直接执行（而不是在打开某个串行终端后在 JeVois 命令行界面中运行）。使用方法如下：
 
 \verbatim
 jevois-cmd help
 \endverbatim
 
-Connects to JeVois using the serial-over-USB port, issues the command `help` to JeVois, collects an displays the results
-returned by JeVois.
+使用串行 USB 端口连接到 JeVois，向 JeVois 发出命令 `help`，收集并显示 JeVois 返回的结果。
 
-Any valid JeVois command-line command can be sent. For example:
+可以发送任何有效的 JeVois 命令行命令。例如：
 
 \verbatim
 jevois-cmd setpar cpumax 1200
 \endverbatim
 
-should return
+应该返回
 
 \verbatim
 OK
 \endverbatim
 
-and a subsequent
+以及随后的
 
 \verbatim
 jevois-cmd info
 \endverbatim
 
-should show the updated CPU frequency of 1200 MHz as follows:
+应显示更新后的 CPU 频率 1200 MHz，如下所示：
 
 \verbatim
 INFO: JeVois 1.3.0
@@ -63,16 +58,13 @@ OK
 \endverbatim
 
 
-\note If JeVois complains about errors but you know that your command is correct, maybe the Linux \b ModemManager is
-running on your host computer and is trying to configure JeVois as a modem, sending it all kinds of commands that JeVois
-is not interested in. See \ref USBserialLinux for more guidance on this.
+
+\note 如果 JeVois 抱怨错误，但您知道您的命令是正确的，那么 Linux \b ModemManager 可能正在您的主机上运行，​​并试图将 JeVois 配置为调制解调器，向其发送 JeVois 不感兴趣的各种命令。有关这方面的更多指导，请参阅 \ref USBserialLinux 。
 
 
-\note `jevois-cmd` is a simple shell script. Feel free to look at it. You may be able to create equivalents of that
-script for Mac and Windows. If so, please contribute them so that others can enjoy your scripts!
+\note `jevois-cmd` 是一个简单的 shell 脚本。请随意查看。您可能能够为 Mac 和 Windows 创建该脚本的等效版本。如果可以，请贡献它们，以便其他人可以享受您的脚本！
 
-\note On Mac, you can try a simple `echo info > /dev/cu.usbmodem*` and then `cat /dev/cu.usbmodem*` to see the results
-(issue a CTRL-C once you have seen all the results you needed to see).
+\note 在 Mac 上，您可以尝试简单的 `echo info > /dev/cu.usbmodem*` ，然后尝试 `cat /dev/cu.usbmodem*` 来查看结果（看到所有需要查看的结果后按 CTRL-C）。
 
 
 */

@@ -1,40 +1,29 @@
-/*! \page UserGettingStarted Getting started with using the JeVois smart camera
+/*! \page UserGettingStarted 开始使用 JeVois 智能相机
 
-To use your JeVois camera, follow the instructions at [JeVois Start](http://jevois.org/start/start.html).
+要使用您的 JeVois 相机，请按照 [JeVois Start](http://jevois.org/start/start.html) 中的说明进行操作。
 
-\note Note that since June 2018 it may be easier to use \ref JeVoisInventor.  The instructions below do not require
-JeVois Inventor are are provided in case you do not want to use the Inventor.
+\note 请注意，自 2018 年 6 月起，使用 \ref JeVoisInventor 可能会更容易。以下说明不需要 JeVois Inventor，以防您不想使用 Inventor。
 
-Things to do in this tutorial:
+本教程中要做的事情：
 
-- Get your JeVois smart camera connected and working. Follow instructions here:
-  + [JeVois Start](http://jevois.org/start/start.html).
+- 连接并运行 JeVois 智能相机。请按照此处的说明操作：
+  + [JeVois Start](http://jevois.org/start/start.html)。
   + \ref UserQuick
   + \ref UserModes
 
-- Try the different machine vision modules listed in the [demos section of JeVois
-  Start](http://jevois.org/start/start.html#demos-section): For each module, select its video resolution in your video
-  capture software, then click on its name in the [demos section of JeVois
-  Start](http://jevois.org/start/start.html#demos-section) to see some explanations of what it can do and to try it out
-  with some sample images from the web or some objects that you have. For example:
+- 尝试 [JeVois Start 的演示部分](http://jevois.org/start/start.html#demos-section) 中列出的不同机器视觉模块：对于每个模块，请在视频捕获软件中选择其视频分辨率，然后单击 [JeVois Start 的演示部分](http://jevois.org/start/start.html#demos-section) 中其名称，查看其功能说明，并使用来自网络或您拥有的某些对象的示例图像进行尝试。例如：
 
-  + Select <b>YUYV 640x360 @ 30.0 fps</b> in your video capture software and check out \jvmod{JeVoisIntro}. Follow the
-    on-screen directions and see the videos below.
+  + 在您的视频捕捉软件中选择 <b>YUYV 640x360 @ 30.0 fps</b> 并查看 \jvmod{JeVoisIntro} 。按照屏幕上的说明操作并观看以下视频。
 
-  + Select <b>YUYV 320x286 @ 30.0 fps</b> in your video capture software and show some QR-codes to your JeVois smart
-    camera. For examples, see \jvmod{DemoQRcode} and click on the small QR codes in there to display them bigger, then
-    point your JeVois smart camera towards them.
+  + 在您的视频捕获软件中选择 <b>YUYV 320x286 @ 30.0 fps</b>，并向您的 JeVois 智能相机显示一些二维码。有关示例，请参阅 \jvmod{DemoQRcode} 并单击其中的小二维码以将其显示得更大，然后将您的 JeVois 智能相机指向它们。
 
-  + Select <b>YUYV 320x260 @ 30.0 fps</b> in your video capture software and show some ArUco markers to your JeVois
-    smart camera. For examples, see \jvmod{DemoArUco} and click on the small ArUco codes in there to display them
-    bigger, then point your JeVois smart camera towards them.
+  + 在视频捕获软件中选择 <b>YUYV 320x260 @ 30.0 fps</b>，并向 JeVois 智能相机显示一些 ArUco 标记。有关示例，请参阅 \jvmod{DemoArUco} 并单击其中的小 ArUco 代码以将其显示得更大，然后将 JeVois 智能相机指向它们。
 
-  + And so on. Just go down the list in the [demos section of JeVois
-    Start](http://jevois.org/start/start.html#demos-section) and try things out.
+  + 等等。只需浏览 [JeVois Start 的演示部分](http://jevois.org/start/start.html#demos-section) 中的列表并尝试操作即可。
 
-- See the videos below where we play with some of these machine vision modules out of the box.
-  
-  
+- 观看下面的视频，我们在其中演示了一些开箱即用的机器视觉模块。
+
+
 \youtube{pfLlk30uF6Y}
 
 \youtube{HdmmU7385jY}
@@ -44,3 +33,4 @@ Things to do in this tutorial:
 \youtube{sAGT_sj3188}
 
 */
+

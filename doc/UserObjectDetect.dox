@@ -1,121 +1,85 @@
-/*! \page UserObjectDetect Live training of the Object Detection module
+/*! \page UserObjectDetect 对象检测模块的实时训练
 
 
-The \jvmod{ObjectDetect} module allows JeVois to detect objects that it has seen before.
+\jvmod{ObjectDetect} 模块允许 JeVois 检测它之前见过的物体。
 
-With \jvversion{1.2} and later you can train this algorithm live.
+使用 \jvversion{1.2} 及更高版本，您可以实时训练该算法。
 
-In this tutorial, you will learn how to train the algorithm live to recognize new objects.
+在本教程中，您将学习如何实时训练算法来识别新物体。
 
-Getting started
----------------
+入门
+---------------  
 
-- Connect JeVois to a host computer.
+- 将 JeVois 连接到主机。
 
-- Start video capture software and select <b>YUYV 320x252 @ 30.0 fps</b> which should launch the \jvmod{ObjectDetect}
-  module.
+- 启动视频捕捉软件并选择 <b>YUYV 320x252 @ 30.0 fps</b>，这将启动 \jvmod{ObjectDetect} 模块。
 
-- Start a serial terminal and connect to the serial-over-USB port of JeVois.
+- 启动串行终端并连接到 JeVois 的串行 USB 端口。
 
-Theory of operation
+操作理论 
 -------------------
 
-The module finds objects by matching keypoint descriptors between the current image and a set of training images. Here
-we use SURF keypoints and descriptors as provided by OpenCV.
+该模块通过匹配当前图像和一组训练图像之间的关键点描述符来查找对象。这里我们使用 OpenCV 提供的 SURF 关键点和描述符。
 
-The algorithm consists of 4 phases:
-- detect keypoint locations, typically corners or other distinctive texture elements or markings;
-- compute keypoint descriptors, which are summary representations of the image neighborhood around each keypoint;
-- match descriptors from current image to descriptors previously extracted from training images;
-- if enough matches are found between the current image and a given training image, and they are of good enough
-  quality, compute the homography (geometric transformation) between keypoint locations in that training image and
-  locations of the matching keypoints in the current image. If it is well conditioned (i.e., a 3D viewpoint change
-  could well explain how the keypoints moved between the training and current images), declare that a match was
-  found, and draw a green rectangle around the detected object.
+该算法包含 4 个阶段：
+- 检测关键点位置，通常是角或其他独特的纹理元素或标记；
+- 计算关键点描述符，即每个关键点周围图像邻域的摘要表示；
+- 将当前图像中的描述符与之前从训练图像中提取的描述符进行匹配；
+- 如果在当前图像和给定训练图像之间找到足够多的匹配，并且它们的质量足够好，则计算该训练图像中的关键点位置与当前图像中匹配关键点位置之间的单应性（几何变换）。如果条件良好（即 3D 视点变化可以很好地解释关键点在训练图像和当前图像之间的移动方式），则声明找到匹配，并在检测到的对象周围绘制一个绿色矩形。
 
 Live training
 -------------
 
-Because this alogrithm performs matching between the current image captured by JeVois and a collection of reference
-images, only one training examplar is needed for each new object.
+由于该算法在 JeVois 捕获的当前图像和参考图像集合之间进行匹配，因此每个新对象只需要一个训练样本。
 
-The \jvmod{ObjectDetect} module provides commands and parameters to assist you in collecting a good training image for
-each new object that you want to be able to detect:
+\jvmod{ObjectDetect} 模块提供了命令和参数来帮助您为想要检测的每个新对象收集良好的训练图像：
 
-- parameter \p showwin - shows a rectangular window that will be used to collect training samples. Training images will
-  be collected for objects that should fit inside this window and occupy as much of it as possible.
+- 参数 \p showwin - 显示一个矩形窗口，用于收集训练样本。将收集适合此窗口并尽可能占据窗口大部分空间的对象的训练图像。
 
-- parameter \p win - defines the size and shape of the window. You should size the window so that the training view of a
-  new object fills that window when the object of interest is placed at a distance from JeVois that is expected to be
-  the typical distance at which one would like to later recognize that object. The algorithm does provide some degree of
-  scale invariance, but training with the object at the typical distance at which you would later want to detect it will
-  help making detections even more reliable.
+- 参数 \p win - 定义窗口的大小和形状。您应该调整窗口大小，以便当感兴趣的对象与 JeVois 之间的距离达到预期的典型距离时，新对象的训练视图可以填充该窗口，而该距离预计是人们希望稍后识别该对象的典型距离。该算法确实提供了一定程度的尺度不变性，但使用对象在您稍后想要检测它的典型距离处进行训练将有助于使检测更加可靠。
 
-First, enable display of a training window using:
+首先，使用以下命令启用训练窗口的显示：
 \verbatim
 setpar showwin true
 \endverbatim
 
-You should now see a grey rectangle. You can adjust the window size and aspect ratio using the \p win parameter. By
-default, the algorithm will train new objects that occupy half width and height of the camera image.
-    
-Point your JeVois camera to a clean view of an object you want to learn (if possible, with a blank, featureless
-background, as this algorithm does not attempt to segment objects and would otherwise also learn features of the
-backgrouns as part of the object). Make sure the objects fits inside the grey rectangle and fills as much of it as
-possible. You should adjust the distance between th eobject and the camera, and the grey rectangle, to roughly match the
-distance at which you want to detect that object in the future. Then issue the command:
+现在您应该会看到一个灰色矩形。您可以使用 \p win 参数调整窗口大小和纵横比。默认情况下，算法将训练占据相机图像一半宽度和高度的新对象。将您的 JeVois 相机对准您想要学习的对象的清晰视图（如果可能，最好使用空白、无特征的背景，因为该算法不会尝试分割对象，否则也会学习作为对象一部分的背景特征）。确保对象适合灰色矩形并尽可能填充它。您应该调整对象与相机以及灰色矩形之间的距离，以大致匹配您将来想要检测该对象的距离。然后发出命令：
 
 \verbatim
 save somename
 \endverbatim
 
-over a serial connection to JeVois, where <em>somename</em> is the name you want to give to this object. This will grab
-the current camera image, crop it using the grey rectangle, and save the crop as a new training image
-<b>somename.png</b> for immediate use. The algorithm will immediately re-train on all objects, including the new
-one. You should see the object being detected shortly after you send your save command. Note that we save the image as
-grayscale since this algorithm does not use color anyway.
+通过与 JeVois 的串行连接，其中 <em>somename</em> 是您要赋予此对象的名称。这将抓取当前相机图像，使用灰色矩形裁剪，并将裁剪的图像保存为新的训练图像 <b>somename.png</b> 以供立即使用。该算法将立即对所有对象（包括新对象）进行重新训练。发送保存命令后不久，您应该会看到检测到的对象。请注意，我们将图像保存为灰度，因为此算法无论如何都不使用颜色。
 
-You can see the list of current images by using command:
+您可以使用命令查看当前图像列表：
 \verbatim
 list
 \endverbatim
 
-Finally, you can delete an image using command:
+最后，您可以使用命令删除图像：
 
 \verbatim
 del somename
 \endverbatim
-where <em>somename</em> is the object name without extension, and a .png extension will be added. The image will
-immediately be deleted and that object will not be recognized anymore.
+其中 <em>somename</em> 是没有扩展名的对象名称，并将添加 .png 扩展名。图像将立即被删除，并且该对象将不再被识别。
 
-See it in action
+观看实际操作 
 ----------------
 
 \youtube{qwJOcsbkZLE}
 
-Additional activities
+其他活动 
 ---------------------
 
-- This module does not attempt to discard any specular reflection off of shiny objects. Rather, it may learn
-  specularities (shiny spots) as spurious features of the object. This is problematic if one trains the algorithm with a
-  shiny object under one light source orientation, and then tests under a different orientation: the specular
-  reflections will move on the object and this will reduce the matching score. Hence, some consideration of the lighting
-  conditions during both training and test is warranted. You may want to try:
+- 此模块不会尝试丢弃任何闪亮物体的镜面反射。相反，它可能会将镜面反射（闪亮点）作为物体的虚假特征来学习。如果在一种光源方向下用闪亮物体训练算法，然后在不同的方向下进行测试，则会出现问题：镜面反射会在物体上移动，这会降低匹配分数。因此，在训练和测试期间都有必要考虑照明条件。您可能想尝试：
 
-  + Orienting the object during training so that no specular spot is visible. This may require using some soft lighting
-    (e.g., using a white umbrella to diffuse light).
-  + Using omnidirectional lighting (e.g., ring of LEDs).
-  + Possibly training several images corresponding to several distinct light source orientations.
-  
-  
-- The module provides additional parameters that you should adjust to get the best possible recognition accuracy. These
-  parameters will provide a trade-off between misses (object was present but JeVois did not detect it) and false alarms
-  (object was not there but JeVois mistakenly reported that it was because JeVois was tripped by other features that
-  looked similar). Try to adjust these:
-  + \p hessian - higher means that less crisp keypoints (smoother appearance) will not be used
-  + \p goodpts - a broader range will allow detection of an object under wider conditions but may slow down the
-    algorithm and/or give rise to more false alarms.
-  + \p distthresh - a higher value will enforce a stricter matching of descriptors between the training image and the
-    current image, which may decrease false alarms but also increase misses.
+  + 在训练期间调整物体的方向，使镜面反射点不可见。这可能需要使用一些柔和的照明（例如，使用白色雨伞来散射光线）。
+  + 使用全向照明（例如，LED 环）。
+  + 可能训练与几个不同光源方向相对应的多幅图像。
+- 该模块提供了额外的参数，您应该调整这些参数以获得最佳的识别准确度。这些参数将在遗漏（物体存在但 JeVois 没有检测到）和误报（物体不存在但 JeVois 错误地报告这是因为 JeVois 被其他看起来相似的特征绊倒）之间提供权衡。尝试调整这些：
+  + \p hessian - 更高意味着不会使用不太清晰的关键点（更平滑的外观）
+  + \p goodpts - 更宽的范围将允许在更广泛的条件下检测物体，但可能会减慢算法和/或导致更多的误报。
+  + \p distthresh - 较高的值将强制训练图像和当前图像之间描述符的更严格匹配，这可能会减少错误警报但也会增加遗漏。
 
 */
+

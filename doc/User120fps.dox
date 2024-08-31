@@ -1,58 +1,45 @@
-/*! \page User120fps Video recording at 120 frames/s and slow-motion effect
+/*! \page User120fps 以 120 帧/秒录制视频并带有慢动作效果
 
 
-Let's use the JeVois camera to capture some low-resolution video at 120 frames/s. This will give us
-a slow-motion effect when viewing the video at normal 30 frames/s rate.
+让我们使用 JeVois 相机以 120 帧/秒的速度捕捉一些低分辨率视频。这将使我们在以正常的 30 帧/秒速率观看视频时获得慢动作效果。
 
-The SaveVideo module
+SaveVideo 模块 
 --------------------
 
-Start by inspecting the docs for the \jvmod{SaveVideo} module. This module is the one we will use to record video to
-MicroSD.
+首先检查 \jvmod{SaveVideo} 模块的文档。我们将使用此模块将视频录制到 MicroSD。
 
-Activity 1 - capture with display
+活动 1 - 捕获并显示 
 ---------------------------------
 
-We start by using \jvmod{SaveVideo} in a mode with USB output, so we can check for proper operation using a video
-capture software on a host computer, and get a hang of it.
+我们首先在具有 USB 输出的模式下使用 \jvmod{SaveVideo}，这样我们就可以使用主机上的视频捕获软件检查操作是否正常，并掌握它。
 
-- Connect your JeVois smart camera to a host computer using a mini-USB cable.
+- 使用微型 USB 线将您的 JeVois 智能相机连接到主机。
 
-- Start video capture software (see \ref User, if needed), and set to <b>YUYV 320x240 @ 60fps</b>, which should select
-the \jvmod{SaveVideo} module if you are using the default <b>videomappings.cfg</b> on your MicroSD card.
+- 启动视频捕获软件（如果需要，请参阅 \ref User ），并设置为 <b>YUYV 320x240 @ 60fps</b>，如果您在 MicroSD 卡上使用默认的 <b>videomappings.cfg</b>，则应该选择 \jvmod{SaveVideo} 模块。
 
-- Establish a serial-over-USB connection to the command-line interface of JeVois (see \ref UserCli, if needed).
+- 建立与 JeVois 命令行界面的串行 USB 连接（如果需要，请参阅 \ref UserCli ）。
 
-- Issue commands \c help, \c info, etc to make sure everything is ok with the command-line
-communication. On Linux, remember that if you get some error messages here, probably you need to kill
-<b>ModemManager</b> that may be bombarding JeVois with modem configuration commands that are interfering with your
-commands. See \ref USBserialLinux if needed.
+- 发出命令 \c help、\c info 等，以确保命令行通信一切正常。在 Linux 上，请记住，如果您在此处收到一些错误消息，则可能需要终止 <b>ModemManager</b>，因为它可能会用干扰您命令的调制解调器配置命令轰炸 JeVois。如果需要，请参阅 \ref USBserialLinux 。
 
-Observe how the captured video has an overlay that says, towards top: <b>SaveVideo: not recording</b>. Before we start,
-let us enable output messages to our serial-over-USB connection. Issue the following command to the JeVois command-line
-interface:
+观察捕获的视频顶部的覆盖层：<b>SaveVideo: not recording</b>。在开始之前，让我们启用串行 USB 连接的输出消息。向 JeVois 命令行界面发出以下命令：
 
 \verbatim
 setpar serout USB
 \endverbatim
 
-Now, we will see serial output messages (messages issued by the running machine vision module and intended for user
-and/or Arduino consumption). See \ref UserCli for details about \b serout and \b serlog.
+现在，我们将看到串行输出消息（由正在运行的机器视觉模块发出并供用户和/或 Arduino 使用的消息）。有关 \b serout 和 \b serlog 的详细信息，请参阅 \ref UserCli 。
 
-The \jvmod{SaveVideo} module has two extra commands, which are only available when that module is loaded. The commands
-thus become available in the command-line interface as you load the module (e.g., by selecting the resolution as we did
-above), and they disappear when that module is unloaded and another module is loaded. To check what the
-\jvmod{SaveVideo} module provides, you should:
+\jvmod{SaveVideo} 模块有两个额外的命令，只有在加载该模块时才可用。因此，当您加载模块时（例如，通过选择分辨率，如上所示），这些命令在命令行界面中可用，当卸载该模块并加载另一个模块时，它们会消失。要检查 \jvmod{SaveVideo} 模块提供的内容，您应该：
 
-- Check out the documentation page for the \jvmod{SaveVideo} module.
+- 查看 \jvmod{SaveVideo} 模块的文档页面。
 
-- issue a command \c help in your serial terminal and observe the output, in particular, note these sections:
+- 在串行终端中发出命令 \c help 并观察输出，特别注意以下部分：
 
 \verbatim
 MODULE-SPECIFIC COMMANDS:
 
 start - start saving video
-stop - stop saving video and increment video file number
+stop - 停止保存视频并增加视频文件数量
 
 \endverbatim
 
@@ -63,34 +50,32 @@ PARAMETERS:
 
 Video Saving Options:
   --fps (double) default=[30]
-    Video frames/sec as stored in the file and to be used both for recording and playback. Beware that the video writer will drop frames if you are capturing faster than the frame rate specified here. For example, if capturing at 120fps, be sure to set this parameter to 120, otherwise by default the saved video will be at 30fps even though capture was running at 120fps.
+    文件中存储的视频帧数/秒，用于录制和播放。请注意，如果捕获速度快于此处指定的帧速率，视频写入器将丢帧。例如，如果以 120fps 的速度捕获，请确保将此参数设置为 120，否则默认情况下，即使捕获以 120fps 运行，保存的视频也将默认为 30fps。
        Exported By: SaveVideo
 
   --fourcc (string) default=[MJPG] Regex:[^\w{4}$]
-    FourCC of the codec to use. The OpenCV VideoWriter doc is unclear as to which codecs are supported. Presumably, the ffmpeg library is used inside OpenCV. Hence any video encoder supported by ffmpeg should work. Tested codecs include: MJPG, MP4V, AVC1. Make sure you also pick the right filename extension (e.g., .avi for MJPG, .mp4 for MP4V, etc)
+    要使用的编解码器的 FourCC。OpenCV VideoWriter 文档未明确说明支持哪些编解码器。据推测，ffmpeg 库在 OpenCV 内部使用。因此，任何受 ffmpeg 支持的视频编码器都应该可以使用。经过测试的编解码器包括：MJPG、MP4V、AVC1。请确保您还选择了正确的文件扩展名（例如，MJPG 为 .avi，MP4V 为 .mp4，等等）
        Exported By: SaveVideo
 
   --filename (string) default=[video%06d.avi]
-    Name of the video file to write. If path is not absolute, /jevois/data/savevideo/ will be prepended to it. Name should contain a printf-like directive for one int argument, which will start at 0 and be incremented on each streamoff command.
+    要写入的视频文件的名称。如果路径不是绝对路径，则将在其前面添加 /jevois/data/savevideo/。名称应包含一个 int 参数的类似 printf 的指令，该指令将从 0 开始，并在每个 streamoff 命令上递增。
        Exported By: SaveVideo
 
 \endverbatim
 
-That is, \jvmod{SaveVideo} has two custom commands (\c start and \c stop) and three parameters (\p fps, \p fourcc and \p
-filename).
+也就是说，\jvmod{SaveVideo} 有两个自定义命令（\c start 和 \c stop ）和三个参数（\p fps、\p fourcc 和 \p filename）。
 
-To start recording, issue the command
+要开始录制，请发出命令
 
 \verbatim
 start
 \endverbatim
 
-and you should see how the top overlay now says \b RECORDING and the recorded file name is shown at the bottom of the
-video.
+您应该看到顶部覆盖现在显示 \b RECORDING ，并且录制的文件名显示在视频的底部。
 
 \image html save-video.png
 
-Also note the messages in the command-line window:
+还请注意命令行窗口中的消息：
 \verbatim
 SAVESTART
 OK
@@ -103,62 +88,42 @@ SAVEDNUM 500
 SAVEDNUM 600
 \endverbatim
 
-To stop recording, issue the command:
+要停止录制，请发出以下命令：
 
 \verbatim
 stop
 \endverbatim
 
-and the status at the top of the recorded video will switch back to <b>not recording</b>. You can start and stop as many
-times as you want. Each time, the name of the video file will be incremented. When you stop, the serial terminal will
-show messages like this:
+并且录制视频顶部的状态将切换回 <b>not recording</b>。您可以根据需要多次开始和停止。每次，视频文件的名称都会增加。当您停止时，串行终端将显示如下消息：
 
 \verbatim
 SAVESTOP
 OK
 \endverbatim
 
-As noted in the documentation of the \jvmod{SaveVideo} module, you should be aware of two things when attempting video
-recording at high frame rates:
+正如 \jvmod{SaveVideo} 模块的文档中所述，尝试以高帧速率录制视频时应该注意两件事：
 
-- If using a video mapping with USB output, the frame rate may be limited by the maximum rate at which the host computer
-  can grab and display. On many host computers, for example, the display refresh rate might be 60Hz. Using a video
-  capture software on these computers is likely going to limit the maximum display rate to 60 frames/s and that will in
-  turn limit the capture and saving rate. This is not an issue when using a video mapping with no USB output.
+- 如果使用带有 USB 输出的视频映射，帧速率可能会受到主机可以抓取和显示的最大速率的限制。例如，在许多主机上，显示刷新率可能是 60Hz。在这些计算机上使用视频捕获软件可能会将最大显示速率限制为 60 帧/秒，从而限制捕获和保存速率。使用没有 USB 输出的视频映射时，这不是问题。
 
-- The \p fps parameter should be set to the rate at which you want to save video. If you capture at 60 frames/s
-  according to your video mapping but \p fps is set to 30, saving will be at 30 fps. This limitation of rate is done
-  internally by the OpenCV VideoWriter. So just make sure that you set the \p fps parameter to the rate at which you
-  want to save.
+- \p fps 参数应设置为您想要保存视频的速率。如果您根据视频映射以 60 帧/秒的速度捕获，但 \p fps 设置为 30，则保存将以 30 fps 进行。此速率限制由 OpenCV VideoWriter 内部完成。因此，只需确保将 \p fps 参数设置为您想要保存的速率即可。
 
-Below we will explore high-frame-rate recording with no video output.
+下面我们将探讨没有视频输出的高帧率录制。
 
 
-Activity 2: Capture with no display
+活动2：无显示捕获 
 -----------------------------------
 
-Let's try to record some video at 120 frames/s to get a cool slow-motion effect. We will use a very low resolution so do
-not expect great video quality as you would get on one of those $400 head-mounted action video cameras. Remember that
-JeVois is a machine vision device and the video it captures is intended for machine vision purposes rather than
-for aesthetic appeal.
+让我们尝试以 120 帧/秒的速度录制一些视频，以获得炫酷的慢动作效果。我们将使用非常低的分辨率，因此不要期望像那些 400 美元的头戴式运动摄像机那样获得出色的视频质量。请记住，JeVois 是一种机器视觉设备，它捕获的视频旨在用于机器视觉目的，而不是为了美观。
 
-- First, quit your video capture software on the host computer if it is still running.
+- 首先，如果主机上的视频捕获软件仍在运行，请退出它。
 
-- As noted in the \jvmod{SaveVideo} module documentation, this module may suffer from DMA coherency artifacts if the \c
-  camturbo parameter of the jevois::Engine is turned on, which it is by default. The \c camturbo parameter relaxes some
-  of the cache coherency constraints on the video buffers captured by the camera sensor, which allows the JeVois
-  processor to access video pixel data from memory faster. But with modules that do not do much processing, sometimes
-  this yields video artifacts, we presume because some of the video data from previous frames still is in the CPU cache
-  and hence is not again fetched from main memory by the CPU.
+- 如 \jvmod{SaveVideo} 模块文档中所述，如果 jevois::Engine 的 \c camturbo 参数已打开（默认情况下），则此模块可能会受到 DMA 一致性伪影的影响。 \c camturbo 参数放宽了摄像头传感器捕获的视频缓冲区的一些缓存一致性约束，这使得 JeVois 处理器能够更快地从内存中访问视频像素数据。但是对于不进行太多处理的模块，有时会产生视频伪影，我们推测这是因为来自先前帧的一些视频数据仍在 CPU 缓存中，因此 CPU 不会再次从主内存中获取这些数据。
 
-  To avoid seeing short stripes of what appears to be wrong pixel colors in the video, let us disable \c camturbo:
-  + Take the MicroSD card out of JeVois and connect to a computer
-  + edit <b>JEVOIS:/config/params.cfg</b> on the MicroSD card and in there turn \c camturbo to false.
+为了避免在视频中看到看似错误像素颜色的短条纹，让我们禁用 \c camturbo：
+  + 将 MicroSD 卡从 JeVois 中取出并连接到计算机
+  + 编辑 MicroSD 卡上的 <b>JEVOIS:/config/params.cfg</b>，然后将 \c camturbo 设置为 false。
 
-- Let's select a video mapping with 120 frames/s and no USB output. The Jevois camera sensor supports 120 fps at
-  resolutions 176x144 and 88x72. Because we will have no video output, here we can use the \c setmapping2 command and
-  specify the desired camera resolution directly without the need to edit the \b videomappings.cfg file on the MicroSD
-  card. Try this:
+- 让我们选择一个每秒 120 帧且没有 USB 输出的视频映射。Jevois 相机传感器支持分辨率为 176x144 和 88x72 的 120 fps。因为我们没有视频输出，所以在这里我们可以使用 \c setmapping2 命令并直接指定所需的相机分辨率，而无需编辑 MicroSD 卡上的 \b videomappings.cfg 文件。试试这个：
 
   \verbatim
   setmapping2 YUYV 176 144 120.0 JeVois SaveVideo
@@ -166,43 +131,32 @@ for aesthetic appeal.
   streamon
   \endverbatim
 
-  This will configure the camera sensor of JeVois for 176x144 capture at 120fps while using the \jvmod{SaveVideo}
-  module. We also let the video writer know that we do want to not only capture, but also save the video at
-  120fps. Finally, because we are using a video mapping with no USB output, we need to tell the camera to start
-  streaming, as there sill be no host computer to do that.
+  这将配置 JeVois 的相机传感器，以 120fps 的速度捕获 176x144 图像，同时使用 \jvmod{SaveVideo} 模块。我们还让视频编写器知道我们不仅要捕获，还要以 120fps 的速度保存视频。最后，因为我们使用的是没有 USB 输出的视频映射，所以我们需要告诉相机开始流式传输，因为没有主机可以执行此操作。
 
-- Now issue a \c start command and you will start recording at 120fps.
+- 现在发出 \c start 命令，您将以 120fps 开始录制。
 
-- When done, issue a \stop command to make sure the recorded video file is properly closed and finalized.
+- 完成后，发出 \stop 命令以确保录制的视频文件正确关闭并完成。
 
-- Take the MicroSD card out of your JeVois camera and look in <b>JEVOIS:/data/savevideo/</b> on the card for recorded
-  video files.
+- 从 JeVois 相机中取出 MicroSD 卡，然后在卡上的 <b>JEVOIS:/data/savevideo/</b> 中查找录制的视频文件。
 
 
-Here is a sample video, first recorded at 30 frames/s and then at 120 frames/s:
+这是一个示例视频，首先以 30 帧/秒的速度录制，然后以 120 帧/秒的速度录制：
 
-30 frames/s video:
+30帧/秒的视频：
 
 \youtube{pBw71K4ViS4}
 
-120 frames/s video:
+120 帧/秒视频：
 
 \youtube{r-vjA9-Fobs}
 
-\note One caveat you should be aware of: On some modern operating systems (e.g., latest Mac OSX) a video that has been
-recorded at 120fps may still play at its true-to-life speed as opposed to giving you the slow-motion effect. The player
-(e.g., Quicktime player) will just drop frames to achieve the video frame rate that is indicated inside the file. Thus,
-both the 120fps and the 30fps movies at first looked identical when playing on a Mac. We had to first decode them to
-individual frames, and then recode those frames into movies with declared 30fps rate to see the slow-motion effect in
-the 120fps movie.
+\note 您应该注意一个警告：在某些现代操作系统（例如最新的 Mac OSX）上，以 120fps 录制的视频可能仍会以真实的速度播放，而不是给您慢动作效果。播放器（例如 Quicktime 播放器）只会丢弃帧以达到文件内指示的视频帧速率。因此，在 Mac 上播放时，120fps 和 30fps 的电影最初看起来完全相同。我们必须先将它们解码为单个帧，然后将这些帧重新编码为声明为 30fps 速率的电影，才能在 120fps 电影中看到慢动作效果。
 
 
-Activity 3: Starting the video saving as soon as JeVois is plugged in
+活动 3：一旦 JeVois 插入，就开始保存视频 
 ---------------------------------------------------------------------
 
-To start saving immediately as soon as JeVois is plugged in, we just copy the commands above into
-<b>JEVOIS:/config/initscript.cfg</b>. This script is run as soon as JeVois starts. Hence, edit \b initscript.cfg to
-contain:
+要在 JeVois 插入后立即开始保存，我们只需将上述命令复制到 <b>JEVOIS:/config/initscript.cfg</b> 中。此脚本在 JeVois 启动后立即运行。因此，编辑 \b initscript.cfg 以包含：
 
 \verbatim
 setmapping2 YUYV 176 144 120.0 JeVois SaveVideo
@@ -211,13 +165,11 @@ streamon
 start
 \endverbatim
 
-and now, each time you power your JeVois smart camera, it will record and save video to the MicroSD card.
+现在，每次您为 JeVois 智能相机供电时，它都会录制视频并将其保存到 MicroSD 卡中。
 
-You do not need a host computer anymore, and you can power JeVois from a USB phone charger or a USB battery bank.
+您不再需要主机，您可以使用 USB 手机充电器或 USB 电池组为 JeVois 供电。
 
-One caveat is that you will likely not issue the \c stop command, but instead you will just unplug JeVois when done. The
-video file will not be cleanly closed. With MP4 video, this is ok, the file can still be played up to the point where it
-was interrupted.
+需要注意的是，您可能不会发出 \c stop 命令，而是在完成后拔下 JeVois。视频文件不会完全关闭。对于 MP4 视频，这没问题，文件仍然可以播放到被中断的位置。
 
 */
 

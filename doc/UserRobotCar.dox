@@ -1,29 +1,22 @@
-/*! \page UserRobotCar Build a simple visually-guided toy robot car for under $100 with JeVois
+/*! \page UserRobotCar 使用 JeVois 以不到 100 美元的价格构建一个简单的视觉引导玩具机器人汽车
 
-In this tutorial we build a simple visually-guided robot car, using the cheapest possible mechanical components and
-compensating for their brittleness by using high-framerate, closed-loop vision processing.
+在本教程中，我们构建了一个简单的视觉引导机器人汽车，使用最便宜的机械部件，并通过使用高帧率、闭环视觉处理来弥补它们的脆弱性。
 
-As a first application, the toy robot card will detect, track, and follow ArUco markers (small 2D barcodes).
+作为第一个应用，玩具机器人卡将检测、追踪和遵循 ArUco 标记（小型二维条码）。
 
-In this tutorial, you will learn:
+在本教程中，您将学习：
 
-- How to design and build a simple autonomous vehicle with vision processing
-- How to program a simple visually-guided behavior on an Arduino
+- 如何设计和构建具有视觉处理的简单自动驾驶汽车
+- 如何在 Arduino 上编写简单的视觉引导行为程序
 
 \youtube{7cMtD-ef83E}
 
-Theory of operation
+操作理论 
 -------------------
 
-The robot car will feature a pan/tilt head onto which the JeVois camera will be mounted. This is so that we can very
-quickly track a moving target before it escapes out of the field of view of the JeVois camera, even though the car may
-be quite sluggish to turn and orient towards it.
+机器人汽车将配备一个云台，JeVois 相机将安装在该云台上。这样，即使汽车转向和转向目标的速度很慢，我们也能非常快速地跟踪移动目标，以免它离开 JeVois 相机的视野范围。
 
-JeVois will detect an ArUco marker and will communicate its coordinates and size to an Arduino responsible for
-control. The Arduino implements two PD (proportional, differential) controllers to control the pan-tilt head smoothly so
-that it tracks the moving target. The Arduino then also implements two PID (proportional, integral, differential)
-controllers to steer and move the car, so as to 1) maintain a fixed distance from the target and 2) steep to zero out
-any pan angle on the pan-tilt head (i.e., re-center the pan-tilt head by rotating the whole vehicle).
+JeVois 将检测 ArUco 标记并将其坐标和大小传达给负责控制的 Arduino。Arduino 实现了两个 PD（比例、微分）控制器，以平稳控制云台，使其跟踪移动目标。然后，Arduino 还实现了两个 PID（比例、积分、微分）控制器来操纵和移动汽车，以便 1）与目标保持固定距离和 2）使云台上的任何平移角度趋于零（即通过旋转整个车辆重新将云台置于中心）。
 
 \image html RobotCarOperation.png
 
@@ -47,13 +40,14 @@ AA batteries, screws, wires     |  $2.34 | misc
 Assembly
 --------
 
-- Assemble the car chassis per the provided instructions
+
+- 根据提供的说明组装汽车底盘
 
 \image html RobotCarChassis.jpg
 
-- Assemble the pan/tilt head per the provided instructions
+- 按照提供的说明组装云台
 
-- Use the following Arduino connections:
+- 使用以下 Arduino 连接：
 
 Arduino pin | Connect to
 ------------|----------------------------------------------------------------------------------
@@ -70,21 +64,18 @@ GND         | JeVois micro-serial port black wire
 9           | PWM control wire of pan servo
 10          | PWM control wire of tilt servo
 
-\note The pins used leave enough free pins to connect an optional additional SPI OLED screen should you want to have one
-on your robot. Search for, e.g., 0.96" OLED SPI on eBay to find a screen.
+\note 使用的引脚留有足够的空闲引脚，以便连接可选的附加 SPI OLED 屏幕（如果您希望在机器人上安装一个）。例如，在 eBay 上搜索 0.96 英寸 OLED SPI 即可找到屏幕。
 
-Also connect the 6V power (from the 4xAA pack) to the power lines of the pan and tilt servos, and to the motor input
-voltage of the motor controller board. The Arduino and JeVois will be powered directly from the USB battery bank using
-the splitter mini + micro USB cable. Finally connect the Arduino GND (from USB battery) to motor GND (from 4xAA batteries).
+还将 6V 电源（来自 4xAA 电池组）连接到平移和倾斜伺服器的电源线，以及电机控制器板的电机输入电压。Arduino 和 JeVois 将使用分离器迷你 + 微型 USB 电缆直接从 USB 电池组供电。最后将 Arduino GND（来自 USB 电池）连接到电机 GND（来自 4xAA 电池）。
 
-Your rig should roughly look as follows:
+你的装备大致应该如下所示：
 
 \image html RobotCarAssembled.jpg
 
-JeVois configuration
+JeVois 配置 
 --------------------
 
-For our initial testing of this robot we will use the ArUco module with no USB output. Just edit <b>JEVOIS:/config/initscript.cfg</b> as follows:
+对于我们对此机器人的初步测试，我们将使用没有 USB 输出的 ArUco 模块。只需按如下方式编辑 <b>JEVOIS:/config/initscript.cfg</b>：
 
 \verbatim
 setmapping2 YUYV 320 240 50.0 JeVois DemoArUco
@@ -94,25 +85,23 @@ setpar serstyle Normal
 streamon
 \endverbatim
 
-Arduino code
+Arduino 代码 
 ------------
 
-We will use the Arduino PID Library by Brett Beauregard, make sure to install it in your Arduino IDE.
+我们将使用 Brett Beauregard 的 Arduino PID 库，确保将其安装在您的 Arduino IDE 中。
 
-Here is a simple sketch to follow a single ArUco marker and to attempt to stay at a fixed distance from it:
+下面是一个简单的草图，用于跟随单个 ArUco 标记并尝试与其保持固定距离：
 
 \includelineno JeVoisRobotCar1.C
 
 
-Hopping from one target to the next
+从一个目标跳转到下一个目标 
 -----------------------------------
 
-We modify the code slightly to handle multiple targets. When we receive messages from JeVois about multiple targets, we
-keep track of the current ArUco ID that is tracked, and the next one that is being detected. Once the currently tracked
-one is close to us, we switch to tracking the next one. See the slightly modified logic in the loop() function of the
-modified code:
+我们稍微修改了代码以处理多个目标。当我们收到来自 JeVois 的有关多个目标的消息时，我们会跟踪当前被跟踪的 ArUco ID 以及正在检测的下一个目标。一旦当前跟踪的目标接近我们，我们就会切换到跟踪下一个目标。查看修改后的代码的 loop() 函数中略微修改的逻辑：
 
 \includelineno JeVoisRobotCar2.C
 
 
 */
+

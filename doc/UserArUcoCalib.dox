@@ -1,41 +1,34 @@
-/*! \page UserArUcoCalib Calibrating your camera for ArUco and other OpenCV modules
+/*! \page UserArUcoCalib 为 ArUco 和其他 OpenCV 模块校准你的相机
 
-Camera calibration consists of determining essential parameters of the optics and of the sensor. Once a precise
-calibration is achieved, modules such as \jvmod{DemoArUco}, \jvmod{FirstVision}, \jvmod{FirstPython}, and
-\jvmod{PythonObject6D} can recover the exact location and orientation of a marker or object in 3D space.
+相机校准包括确定光学元件和传感器的基本参数。一旦实现精确校准，\jvmod{DemoArUco}、\jvmod{FirstVision}、\jvmod{FirstPython} 和 \jvmod{PythonObject6D} 等模块就可以恢复标记或物体在 3D 空间中的准确位置和方向。
 
-JeVois includes a set of default calibration files for the standard sensor and optics.
+JeVois 包含一组用于标准传感器和光学器件的默认校准文件。
 
-You should consider running a calibration if:
-- you need very precise pose estimation
-- you have installed a different sensor in your JeVois camera
-- you have changed the lens to a different one (eg., 90 degrees field of view)
-- you have adjusted the lens
+如果出现以下情况，您应该考虑进行校准：
+- 您需要非常精确的姿势估计
+- 您在 JeVois 相机中安装了不同的传感器
+- 您已将镜头更改为不同的镜头（例如，90 度视野）
+- 您已调整镜头
 
-Note that calibration is dependent on image resolution. So the procedure described here should be repeated for every
-video resolution which you intend to use.
+请注意，校准取决于图像分辨率。因此，对于您打算使用的每种视频分辨率，都应重复此处描述的过程。
 
-\note Starting with \jvversion{1.12.0}, you can calibrate your camera using the new module \jvmod{CalibrateCamera},
-thereby eliminating the need for the more tedious steps below.
+\note 从 \jvversion{1.12.0} 开始，您可以使用新模块 \jvmod{CalibrateCamera} 校准您的相机，从而无需执行下面更为繁琐的步骤。
 
-Creating the virtual machine
+创建虚拟机 
 ----------------------------
 
-Start with a fresh Ubuntu 18.04 virtualbox.
+从全新的 Ubuntu 18.04 virtualbox 开始。
 
-Follow the instructions at http://jevois.org/doc/Virtualbox.html but with Ubuntu 18.04. Beware: you may have problems
-compiling ARtoolkit with later versions of Ubuntu.
+按照 http://jevois.org/doc/Virtualbox.html 上的说明进行操作，但要使用 Ubuntu 18.04。注意：使用更高版本的 Ubuntu 编译 ARtoolkit 可能会遇到问题。
 
-Make sure you reboot your host and install the USB device filter. You should get to the point where you can see video in
-`guvcview` when you connect your JeVois camera.
+确保重新启动主机并安装 USB 设备过滤器。连接 JeVois 相机后，您应该可以在“guvcview”中看到视频。
 
-Compiling the calibration programs
+编译校准程序 
 ----------------------------------
 
-We will compile the OpenCV calibration code natively in our virtual machine.
+我们将在虚拟机中本地编译 OpenCV 校准代码。
 
-We follow the instructions at http://jevois.org/basedoc/ArUco_8H_source.html except that we will just use the default
-OpenCV that comes with Ubuntu as opposed to using the JeVois OpenCV.
+我们遵循 http://jevois.org/basedoc/ArUco_8H_source.html 上的说明，但我们只使用 Ubuntu 自带的默认 OpenCV，而不是使用 JeVois OpenCV。
 
 \code{.py}
 sudo apt install libopencv-dev build-essential g++
@@ -53,50 +46,43 @@ g++ calibrate_camera_charuco.cpp -o calibrate_camera_charuco -lopencv_core -lope
 
 \endcode
 
-The program we will use should now be ready in `bin/calib_camera`
 
-Preparing your JeVois camera
+我们将要使用的程序现在应该在 `bin/calib_camera` 中准备好了
+
+准备您的 JeVois 相机 
 ----------------------------
 
-The camera calibration will just select the default video mode from the camera.
+相机校准只会从相机中选择默认的视频模式。
 
-To make sure the particular resolution is selected, edit \b videomappings.cfg on your JeVois camera to have only one
-mode. For example, using JeVois Inventor, go to the Config tab and select \b videomappings.cfg, then select all (CTRL-A)
-and delete (DEL) and finally just add one Pass Through mode. For example, to calibrate a modified JeVois camera using an
-optional 2MP OV2640 sensor at 1280x720:
+为确保选择了特定分辨率，请在 JeVois 相机上编辑 \b videomappings.cfg 以仅使用一种模式。例如，使用 JeVois Inventor，转到 Config 选项卡并选择 \b videomappings.cfg ，然后选择全部 (CTRL-A) 并删除 (DEL)，最后只添加一个直通模式。例如，要使用可选的 2MP OV2640 传感器在 1280x720 下校准经过修改的 JeVois 相机：
 
 
 \verbatim
 YUYV 1280 720 10.0 YUYV 1280 720 10.0 JeVois PassThrough
 \endverbatim
 
-Save to JeVois (CTRL-S) and confirm that you can see video after JeVois restarts.
+保存到 JeVois（CTRL-S）并确认 JeVois 重新启动后您就可以看到视频。
 
-Do this on another machine running JeVois Inventor (or quit your virtualbox first and run JeVois Inventor).
+在另一台运行 JeVois Inventor 的机器上执行此操作（或先退出虚拟机并运行 JeVois Inventor）。
 
 
-Printing the calibration pattern
+打印校准图案 
 --------------------------------
 
-Now back to our VirtualBox, first create an array of ArUco markers (a so-called ChArUco):
+现在回到我们的 VirtualBox，首先创建一个 ArUco 标记数组（所谓的 ChArUco）：
 
 \code{.py}
 ./create_board_charuco -d=0 -h=5 -w=8 --ml=200 --sl=350 charuco.png
 \endcode
 
-Then print it (you may have to first use `scp`, `ftp`, or other to send the file from your virtualbox to a computer that
-has a printer -- or just get it from http://jevois.org/data/charuco.png instead), measure the marker size and spacing
-size (in whatever units you want, here we use meters, just make sure you will use that same unit later when you specify
-marker size in \jvmod{DemoArUco} and others).
+然后打印它（您可能必须先使用 `scp`，`ftp` 或其他方式将文件从您的虚拟机发送到具有打印机的计算机 - 或者直接从 http://jevois.org/data/charuco.png 获取它），测量标记大小和间距大小（以您想要的任何单位，这里我们使用米，只要确保您稍后在 \jvmod{DemoArUco} 和其他中指定标记大小时使用相同的单位即可）。
 
 \jvimg{charuco-measure.png, 30%}
 
-Running the calibration program
+运行校准程序 
 -------------------------------
 
-Finally, derive the camera parameters from it (set the `--ml` and `--sl` parameters to what you measure on your printed
-board; below are what we measured after printing the 5x8 charuco board on US Letter paper with auto scaling/rotate to
-fit paper):
+最后，从中得出相机参数（将 `--ml` 和 `--sl` 参数设置为您在印刷板上测量的值；下面是我们在 US Letter 纸上打印 5x8 Charuco 板并自动缩放/旋转以适合纸张后测量的值）：
 
 \code{.py}
 ./calibrate_camera_charuco -d=0 -h=5 -w=8 --ml=.0172 --sl=.0303 --rs --sc calibration.yaml
@@ -104,27 +90,22 @@ fit paper):
 
 \jvimg{calib_ArUco.png, 30%}
 
-\note This program was not able to capture 1600x1200 at 5fps in our tests. Just declare your mapping as 1600x1200 at
-15fps and it will work fine though really it will stream at 5fps due to USB bandwidth limitation.
+\note 在我们的测试中，此程序无法以 5fps 的速度捕获 1600x1200。只需将您的映射声明为 1600x1200 15fps，它就可以正常工作，尽管由于 USB 带宽限制，它实际上将以 5fps 的速度进行流式传输。
 
-- You should aim your camera so that all the ArUco markers are detected.
+- 您应该瞄准您的相机以便检测到所有的 ArUco 标记。
 
-- Press 'c' to capture the current image and add it to the calibration pool.
+- 按 'c' 捕获当前图像并将其添加到校准池中。
 
-- To obtain a good calibration for the camera, it is important to obtain images of the calibration board at a variety of
-  angles to the camera lens. Note that this involve holding the calibration board at different angles relative to the
-  camera, including upside-down. Try to get at least 10 very different viewpoints.
+- 为了获得良好的相机校准效果，重要的是从各种角度获取校准板与相机镜头的图像。请注意，这需要将校准板以不同的角度相对于相机握住，包括倒置。尝试获取至少 10 个非常不同的视点。
 
-- Once all the calibration images have been captured, press ESC and the calibration data associated to the camera device
-  is calculated. The tabulated calibration data is written to standard out of the command-line window and saved to disk.
+- 捕获所有校准图像后，按 ESC 键，将计算与相机设备相关的校准数据。表格化的校准数据将写入命令行窗口的标准输出并保存到磁盘。
 
-Copying the files to JeVois
----------------------------
+将文件复制到 JeVois 
+--------------------------- 
 
-Copy the calibration file to <b>JEVOIS:/share/camera/</b> on your camera, naming it exactly:
-<b>calibration1280x720.yaml</b> for 1280x720 resolution, or change the name for different resolutions.
+将校准文件复制到相机上的 <b>JEVOIS:/share/camera/</b>，并将其命名为：<b>calibration1280x720.yaml</b>（适用于 1280x720 分辨率），或者更改名称以适应不同的分辨率。
 
-Next time you run \jvmod{DemoArUco} with that resolution, it will load the calibration file.
+下次使用该分辨率运行 \jvmod{DemoArUco} 时，它将加载校准文件。
 
 */
 

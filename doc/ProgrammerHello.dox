@@ -1,35 +1,29 @@
 /*! \page ProgrammerHello Hello JeVois
 
-In this tutorial we create and compile a new JeVois machine vision module from scratch, and we run it on both the host
-computer (for testing) and on the JeVois platform hardware.
+在本教程中，我们从头开始创建和编译一个新的 JeVois 机器视觉模块，并在主机（用于测试）和 JeVois 平台硬件上运行它。
 
-We will develop a module that just streams video from the camera sensor to the host computer, adding a message "Hello
-JeVois" on top of each video frame.
+我们将开发一个模块，将视频从摄像头传感器传输到主机，并在每个视频帧上添加一条消息 "Hello JeVois"。
 
-Preliminaries
+准备工作 
 -------------
 
-- Be sure to go through the \ref Programmer to understand the basic concepts.
+- 请务必阅读 \ref Programmer 以了解基本概念。
 
-- Be sure to go through \ref ProgrammerSetup at least once. As part of this, you will download
-  and compile all the source code and tools needed here.
+- 请务必至少浏览一次 \ref ProgrammerSetup 。作为此操作的一部分，您将下载并编译此处所需的所有源代码和工具。
 
-Getting started
+入门
 ---------------
 
 <ul>
 
-<li>We follow the instructions in \ref ProgrammerSDK to get started with our new module. Here, for a standalone module,
-we will use the helper script <code>jevois-create-module</code>, which takes two arguments: vendor name (this is used
-so that modules with the same name can exist if they have been created by different people), and module name. Here we
-hence type:
+<li>我们按照 \ref ProgrammerSDK 中的说明开始使用我们的新模块。在这里，对于独立模块，我们将使用帮助脚本 <code>jevois-create-module</code>，它接受两个参数：vendor name（使用这个参数是为了确保如果模块由不同的人创建，则名称相同的模块可以存在）和 module name。因此，我们在这里输入：
 
 \verbatim
 cd
 jevois-create-module Tutorial HelloJeVois
 \endverbatim
 
-which will create a directory \b hellojevois and populate it with some skeleton files:
+这将创建一个目录 \b hellojevois 并在其中填充一些骨架文件：
 
 \verbatim
 hellojevois/
@@ -48,22 +42,18 @@ hellojevois/
             └── screenshot1.png
 \endverbatim
 
-The source file for our module is <b>hellojevois/src/Modules/HelloJeVois.C</b>
+我们的模块的源文件是 <b>hellojevois/src/Modules/HelloJeVois.C</b>
 
-See \ref ProgrammerSDK for more information about the files created here.
-</li>
+有关此处创建的文件的更多信息，请参阅 \ref ProgrammerSDK 。</li>
 
-<li>Let us make sure our host compilation environment works. Indeed, the skeleton code created by
-<code>jevois-create-module</code> should compile out of the box. To compile on host, we run the following commands
-from a terminal:
+<li>让我们确保主机编译环境正常工作。事实上，由 <code>jevois-create-module</code> 创建的骨架代码应该可以直接编译。要在主机上编译，我们从终端运行以下命令：
 
 \verbatim
 cd hellojevois
 ./rebuild-host.sh
 \endverbatim
 
-which creates a directory called \b hbuild that will contain all the intermediary build files for compilation for the
-host, and yields
+这将创建一个名为 \b hbuild 的目录，其中包含主机编译所需的所有中间构建文件，并产生
 
 \verbatim
 -- JeVois version 1.0
@@ -112,18 +102,16 @@ Install the project...
 -- Removed runtime path from "/jevois/modules/Tutorial/HelloJeVois/HelloJeVois.so"
 \endverbatim
 
-The module was compiled for the host architecture (here, an Intel processor) and was installed into target directory
-<b>/jevois/modules/Tutorial/HelloJeVois/</b> where it is now ready for use.
+该模块针对主机架构（此处为英特尔处理器）进行了编译，并安装到目标目录 <b>/jevois/modules/Tutorial/HelloJeVois/</b> 中，现在可以使用了。
 
 </li>
 
-<li>Let us also try to cross-compile the module for the JeVois smart camera hardware (ARM processor):
+<li>让我们尝试交叉编译 JeVois 智能相机硬件（ARM 处理器）的模块：
 \verbatim
 ./rebuild-platform.sh
 \endverbatim
 
-which creates a drectory called \b pbuild that will contain all the intermediary build files for compilation for the
-platform, and yields
+这将创建一个名为 \b pbuild 的目录，其中包含平台编译所需的所有中间构建文件，并产生
 
 \verbatim
 -- JeVois version 1.0
@@ -171,49 +159,36 @@ Install the project...
 -- Removed runtime path from "/lab/itti/hellojevois/jvpkg/modules/Tutorial/HelloJeVois/HelloJeVois.so"
 \endverbatim
 
-The module has been cross-compiled for the JeVois processor and the resulting files have been copied to
-<b>~/hellojevois/jvpkg/</b>, where they are ready to be packaged into a single JeVois package file that can later be
-copied to microSD and run on the smart camera. Before we do that, let us actually implement our module, i.e., write the
-Hello JeVois message on the video frames.</li>
+该模块已针对 JeVois 处理器进行了交叉编译，生成的文件已复制到 <b>~/hellojevois/jvpkg/</b>，它们已准备好打包成单个 JeVois 包文件，稍后可将其复制到 microSD 并在智能相机上运行。在此之前，让我们实际实现我们的模块，即在视频帧上写入 Hello JeVois 消息。</li>
 
 </ul>
 
-Writing the module
+编写模块 
 ------------------
 
-The skeleton code already provides an initial implementation for the HelloJeVois class, and for its \c process()
-function. It actually even already writes "Hello JeVois". So Let us just have a look at that code and it seems that we
-will not need to modify much (if anything) for this tutorial:
+骨架代码已经为 HelloJeVois 类及其 \c process() 函数提供了初始实现。它实际上甚至已经写入了 "Hello JeVois"。因此，让我们看一下该代码，看起来我们不需要对本教程进行太多修改（如果有的话）：
 
 \includelineno HelloJeVois.C
 
-- Line 1: we include jevois/Core/Module.H to bring in from JeVois all the machinery necessary to create new modules.
+- 第 1 行：我们包含 jevois/Core/Module.H，从 JeVois 引入创建新模块所需的所有机制。
 
-- Line 2: jevois/Image/RawImageOps.H contains some helper functions to deal with raw images captured by the camera
-  sensor, including one that can write text directly in those images. We will use that function to write our text.
+- 第 2 行：jevois/Image/RawImageOps.H 包含一些辅助函数，用于处理相机传感器捕获的原始图像，其中包括一个可以直接在这些图像中写入文本的函数。我们将使用该函数来写入文本。
 
-- Lines 6-37: We use [doxygen](http://dogygen.org) to document code in the JeVois framework. In addition we have created
-  custom doxygen tags to document video mappings and other features specific to JeVois. See \ref ProgrammerSDK for
-  details.
+- 第 6-37 行：我们使用 [doxygen](http://dogygen.org) 来记录 JeVois 框架中的代码。此外，我们还创建了自定义 doxygen 标签来记录视频映射和 JeVois 特有的其他功能。有关详细信息，请参阅 \ref ProgrammerSDK 。
 
-- Line 38: We declare our class and make it derive from jevois::Module. Note that class name should exactly match file
-  name and also the directory name in which the module file immediately is (last level of directories before the file).
+- 第 38 行：我们声明我们的类并使其从 jevois::Module 派生。请注意，类名应与文件名以及模块文件所在的目录名（文件前的最后一级目录）完全匹配。
 
-- Line 42: Here we have nothing to do at construction so we just inherit the constructor of jevois::Module (see \ref
-  ModuleTutorial if you have not yet seen it, as it contains many useful links to concepts used in JeVois, such as,
-  here, inheriting constructors in C++17).
+- 第 42 行：这里我们在构造时无需执行任何操作，因此我们只需继承 jevois::Module 的构造函数（如果您尚未看到，请参阅 \ref ModuleTutorial ，因为它包含许多指向 JeVois 中使用的概念的有用链接，例如，这里，继承 C++17 中的构造函数）。
 
-- Lines 48-73: The process function here is very similar to that of the PassThrough tutorial module of \ref
-  ModuleTutorial, except for a notable addition, on line 66:
+- 第 48-73 行：此处的处理函数与 \ref ModuleTutorial 的 PassThrough 教程模块非常相似，但第 66 行有一个值得注意的附加内容：
   \verbatim
   jevois::rawimage::writeText(outimg, "Hello JeVois!", 100, 230, jevois::yuyv::White, jevois::rawimage::Font20x38);
   \endverbatim
 
-- Line 77: Always remember to register your module with the JeVois framework so that it can be loaded at runtime by the
-  JeVois engine.
+- 第 77 行：请务必记住使用 JeVois 框架注册您的模块，以便 JeVois 引擎可以在运行时加载它。
 
 
-For fun, let us modify line 66 and add a couple more \c writeText() calls:
+为了好玩，让我们修改第 66 行并添加更多 \c writeText() 调用：
 
 \code
   jevois::rawimage::writeText(outimg, "Hello JeVois!", 100, 230, jevois::yuyv::White, jevois::rawimage::Font20x38);
@@ -221,13 +196,10 @@ For fun, let us modify line 66 and add a couple more \c writeText() calls:
   jevois::rawimage::writeText(outimg, "Hello JeVois!", 100, 400, jevois::yuyv::LightPink, jevois::rawimage::Font20x38);
 \endcode
 
-Compiling and testing on host
+在主机上编译和测试 
 -----------------------------
 
-Since we have already run \c rebuild-host.sh once and we have not added any new file since them (which would require
-that we run CMake again to detect them, for example by running \c rebuild-host.sh again), we can just use the partial
-compilation commands detailed in \ref ProgrammerSDK (but note that, since we only have one file to compile here, this
-does not save us much time):
+因为我们已经运行过 \c rebuild-host.sh 一次，并且从那时起我们没有添加任何新文件（这需要我们再次运行 CMake 来检测它们，例如再次运行 \c rebuild-host.sh ），我们可以使用 \ref ProgrammerSDK 中详述的部分编译命令（但请注意，由于我们这里只有一个文件需要编译，所以这并不能为我们节省太多时间）：
 
 \verbatim
 cd hbuild
@@ -235,44 +207,35 @@ make
 sudo make install
 \endverbatim
 
-Assuming that all of JeVois has been compiled previously, \c jevois-daemon should already exist and be ready to
-go. However, we need to add a new video mapping to <b>/jevois/config/videomappings.cfg</b> to let it know when and how
-to use our new module. We edit <b>/jevois/config/videomappings.cfg</b> (may require \c sudo if you get some permission
-denied error), and add a line:
+假设 JeVois 的所有内容都已编译，\c jevois-daemon 应该已经存在并准备就绪。但是，我们需要向 <b>/jevois/config/videomappings.cfg</b> 添加新的视频映射，以便让它知道何时以及如何使用我们的新模块。我们编辑 <b>/jevois/config/videomappings.cfg</b>（如果出现某些权限被拒绝错误，可能需要 \c sudo ），并添加一行：
 
 \verbatim
 YUYV 640 480 28.5 YUYV 640 480 28.5 Tutorial HelloJeVois
 \endverbatim
 
-Or, with \jvversion{1.3} and later, you can just type, in a Linux terminal:
+或者，使用 \jvversion{1.3} 及更高版本，您只需在 Linux 终端中输入： 
 \verbatim
 sudo jevois-add-videomapping YUYV 640 480 28.5 YUYV 640 480 28.5 Tutorial HelloJeVois
 \endverbatim
 
 
-Thus, the JeVois engine will now run module \b HelloJeVois from vendor \b Tutorial when video resolution 640x480 @
-28.5fps is requested. See \ref VideoMapping for more info.
+因此，当请求视频分辨率为 640x480 @ 28.5fps 时，JeVois 引擎现在将运行来自供应商 \b Tutorial 的模块 \b HelloJeVois 。有关更多信息，请参阅 \ref VideoMapping 。
 
-Now we need a regular webcam to test this, which should support YUYV 640x480 (frame rate not critical). Hopefully you
-have one. Of course we could use our JeVois camera configured in PassThrough mode to act like a regular dumb camera, but
-some people seem to be confused by this, so it may not be appropriate for this entry-level tutorial. If you do not have
-a regular USB webcam, just skip to the next section.
+现在我们需要一个普通的网络摄像头来测试这个，它应该支持 YUYV 640x480（帧速率不重要）。希望你有一个。当然，我们可以使用配置为 PassThrough 模式的 JeVois 摄像头来充当普通的哑摄像头，但有些人似乎对此感到困惑，因此它可能不适合这个入门级教程。如果您没有普通的 USB 网络摄像头，请直接跳到下一部分。
 
-Start by just running
+从运行开始
 
 \verbatim
 jevois-daemon
 \endverbatim
 
-which will probably start in another mode (like DemoSaliency). Then, in the terminal in which you started \c
-jevois-daemon, type
+它可能以另一种模式启动（如 DemoSaliency）。然后，在启动 \c jevois-daemon 的终端中，输入
 
 \verbatim
 listmappings
 \endverbatim
 
-and note the mapping number for the one that we just added and that uses our HelloJevois module. For us it was mapping
-16:
+并记下我们刚刚添加的、使用 HelloJevois 模块的映射编号。对于我们来说，它是映射 16：
 
 \verbatim
 ...
@@ -280,17 +243,15 @@ and note the mapping number for the one that we just added and that uses our Hel
 ...
 \endverbatim
 
-See \ref UserCli for more info about sending commands to JeVois and about the \c listmappings command.
+有关向 JeVois 发送命令以及有关 \c listmappings 命令的更多信息，请参阅 \ref UserCli 。
 
-So now just hit <code>CTRL-C</code> to stop \c jevois-daemon, and start it again using mapping 16 (or whatever that
-number was for you):
+因此现在只需按 <code>CTRL-C</code> 即可停止 \c jevois-daemon ，然后使用映射 16（或任何您想要的数字）重新启动它：
 
 \verbatim
 jevois-daemon --videomapping=16
 \endverbatim
 
-
-You should see something like that in your terminal:
+你应该在终端中看到类似这样的内容：
 
 \verbatim
 INF Engine::Engine: Loaded 44 vision processing modes.
@@ -311,40 +272,30 @@ INF Camera::streamOn: 6 buffers of 614400 bytes allocated
 INF READY JEVOIS 1.0
 \endverbatim
 
-and this in a window:
+窗口中显示如下内容：
 
 \image html HelloJeVois1.png
 
-Spicing it up a bit
+稍微加点料 
 -------------------
 
-Let us add a small title in the top-left corner, and also a display of frames/s, CPU frequency, and temperature at the
-bottom, like in the other JeVois demos. For this, we will use the jevois::Timer class.
+让我们在左上角添加一个小标题，并在底部显示 frames/s、CPU 频率和温度，就像在其他 JeVois 演示中一样。为此，我们将使用 jevois::Timer 类。
 
-Indeed, the JeVois framework provides a convenient jevois::Timer classes to help you measure how much time it
-takes to process each video frame. It works as follows:
+事实上，JeVois 框架提供了一个方便的 jevois::Timer 类来帮助你测量处理每个视频帧需要多少时间。它的工作原理如下：
 
-- on every frame, you should issue a \c start() on the timer object to indicate start of frame (start of \c process()
-  function). Do this just after you have received the frame from the camera, so you do not include wait time for that
-  frame.
+- 在每一帧上，您都应该在计时器对象上发出 \c start() 来指示帧的开始（\c process() 函数的开始）。在从相机接收到帧后立即执行此操作，因此您不包括该帧的等待时间。
 
-- at the end of process, issue a \c stop() command
+- 在进程结束时，发出 \c stop() 命令
 
-The timer class will accumulate average statistics over 100 frames and will display those once in a while as information
-messages. In addition to writing messages to the console, \c stop() returns a string we can directly write onto our
-video frames. Timer does not report stats on every frame as this could slow us down too much, especially if sending
-those reports over serial port.
+计时器类将累计 100 帧的平均统计数据，并偶尔将其显示为信息消息。除了将消息写入控制台外，\c stop() 还会返回一个字符串，我们可以将其直接写入视频帧。计时器不会报告每一帧的统计数据，因为这可能会减慢我们的速度，尤其是通过串行端口发送这些报告时。
 
-Let us first include the Timer declarations so we can use it:
+让我们首先包含 Timer 声明以便我们可以使用它：
 
 \code
 #include <jevois/Debug/Timer.H>
 \endcode
 
-and then we add it to our \c process() function, also adding the message at the top of the frame. The modified \c
-process() function now looks like this, with <code>////////////////////////////////////////////////////////</code>
-markers to help you see the modifications (note that here we configured the timer to report every 60 frames, and to
-output text reports at the \c LOG_DEBUG level, which will not be printed out to console by default):
+然后我们将其添加到我们的 \c process() 函数中，同时在框架顶部添加消息。修改后的 \c process() 函数现在如下所示，带有 <code>////////////////////////////////////////////////////////////</code> 标记以帮助您查看修改（请注意，这里我们将计时器配置为每 60 帧报告一次，并在 \c LOG_DEBUG 级别输出文本报告，默认情况下不会打印到控制台）：
 
 \code
     virtual void process(jevois::InputFrame && inframe, jevois::OutputFrame && outframe) override
@@ -389,45 +340,38 @@ output text reports at the \c LOG_DEBUG level, which will not be printed out to 
     }
 \endcode
 
-To re-compile and re-install the module, we just type:
+
+要重新编译并重新安装模块，我们只需输入：
 
 \verbatim
 cd hbuild
 make && sudo make install
 \endverbatim
 
-And we can start \c jevois-daemon again and the output now looks like this (pointing the camera to something darker so
-we can see the small white text):
+我们可以再次启动 \c jevois-daemon ，现在的输出看起来像这样（将相机指向更暗的东西，这样我们就可以看到白色的小文本）：
 
 \image html HelloJeVois2.png
 
-This framerate is fast (this is a $15,000 host computer). We are now happy with our module. Let us run it inside the
-JeVois camera.
+这个帧速率很快（这是一台价值 15,000 美元的主机）。我们现在对我们的模块很满意。让我们在 JeVois 相机内运行它。
 
-Cross-compiling for JeVois hardware
+为 JeVois 硬件进行交叉编译 
 -----------------------------------
 
-Since we have already run \c rebuild-platform.sh on our module and we have not added any new file since then, we can
-just do a partial re-compilation for platform:
+由于我们已经在模块上运行了 \c rebuild-platform.sh ，并且从那时起我们没有添加任何新文件，因此我们可以对平台进行部分重新编译：
 
 \verbatim
 cd ~/hellojevois/pbuild
 make && sudo make install && make jvpkg
 \endverbatim
 
-\note If you get an error like <b>cc1plus: fatal error: jevois/Config/Config.H: No such file or directory</b>, you just
-need to run \c rebuild-platform.sh in your \b jevois directory first.
+\note 如果您收到类似 <b>cc1plus: fatal error: jevois/Config/Config.H: No such file or directory</b> 的错误，您只需先在 \b jevois 目录中运行 \c rebuild-platform.sh 。
 
-This will compile and then pack all the module's files into a .jvpkg package. You can drop that package into
-<b>JEVOIS:/packages/</b> on your microSD. Next time it starts up, JeVois will unpack, install, and then delete the
-package.
+这将编译模块的所有文件，然后将其打包成 .jvpkg 包。您可以将该包放入 microSD 上的 <b>JEVOIS:/packages/</b>。下次启动时，JeVois 将解压、安装，然后删除该包。
 
-Defining a video mapping for our module
+为我们的模块定义视频映射 
 ---------------------------------------
 
-One last thing before we install to the camera is that we will include with our module an additional video mapping that
-we want to be automatically added to the \c videomappings.cfg of our JeVois camera as the module gets installed. For
-this, we edit <b>~/hellojevois/src/Module/HelloJeVois/postinstall</b> as follows:
+在安装到相机之前，最后一件事是，我们将在模块中包含一个额外的视频映射，我们希望在安装模块时将其自动添加到 JeVois 相机的 \c videomappings.cfg 中。为此，我们编辑 <b>~/hellojevois/src/Module/HelloJeVois/postinstall</b>，如下所示：
 
 \code{.py}
 #!/bin/sh
@@ -443,115 +387,84 @@ jevois-add-videomapping YUYV 640 480 28.5 YUYV 640 480 28.5 Tutorial HelloJeVois
 echo "HelloJeVois is now installed"
 \endcode
 
-When the module is installed onto the smart camera, this mapping will automatically be added to the list of existing
-mappings. This will be achieved by JeVois automatically running the \b postinstall script that is in the directory of
-our module. If such script exists, it will be run just after the package is unpacked. It will be run with the current
-directory set to the directory of the module. By default, \c postinstall contains simple commands that just append the
-\c videomappings.cfg of the new module to the main \c videomappings.cfg of JeVois, but you can edit this script if you
-need additional custom configurations to be run as your package is installed.
 
-Installing to JeVois hardware using a .jvpkg package
+当模块安装到智能相机上时，此映射将自动添加到现有映射列表中。这将通过 JeVois 自动运行我们模块目录中的 \b postinstall 脚本来实现。如果存在这样的脚本，它将在包解压后立即运行。它将在当前目录设置为模块目录的情况下运行。默认情况下，\c postinstall 包含简单的命令，只需将新模块的 \c videomappings.cfg 附加到 JeVois 的主 \c videomappings.cfg ，但如果您需要在安装包时运行其他自定义配置，则可以编辑此脚本。
+
+使用 .jvpkg 包安装到 JeVois 硬件 
 ----------------------------------------------------
 
-Let us create a package with all the files of our module:
+让我们创建一个包含我们模块的所有文件的包：
 
 \verbatim
 cd ~/hellojevois/pbuild
 make jvpkg
 \endverbatim
 
-which creates <b>~/hellojevois/Tutorial_hellojevois.jvpkg</b> that contains everything needed to install this module
-onto our smart camera.
+这将创建 <b>~/hellojevois/Tutorial_hellojevois.jvpkg</b>，其中包含将此模块安装到我们的智能相机上所需的一切。
 
-We connect the microSD card of our smart camera to our host computer and we copy the package file to
-<b>JEVOIS:/packages/</b> on the microSD card. Next time we start up the smart camera, it will unpack the package,
-install the module .so file, run the \c postinstall script which will update the video mappings, etc and we will be
-ready to go. Something like this:
+我们将智能相机的 microSD 卡连接到主机，并将包文件复制到 microSD 卡上的 <b>JEVOIS:/packages/</b>。下次启动智能相机时，它将解压包，安装模块 .so 文件，运行 \c postinstall 脚本（将更新视频映射）等，然后我们就可以开始了。如下所示：
 
 \verbatim
 cp Tutorial_hellojevois.jvpkg /media/itti/JEVOIS/packages/
 \endverbatim
 
-(replace \b itti above by your username).  Then insert the microSD into our JeVois smart camera and start it up.
+（将上面的 \b itti 替换为您的用户名）。然后将 microSD 插入我们的 JeVois 智能相机并启动它。
 
 
-\note With \jvversion{1.1} and later, you do not need to physically remove the microSD from JeVois, and you can
-instead just export it as a virtual USB flash drive while JeVois is connected to your host computer and running:
+\note 使用 \jvversion{1.1} 及更高版本，您不需要从 JeVois 中物理移除 microSD，而是可以在 JeVois 连接到主机并运行时将其导出为虚拟 USB 闪存驱动器：
 
-- Export the microSD as a virtual USB flash drive by issuing the command \c usbsd to the JeVois command-line interface
-  (see \ref UserCli). Make sure JeVois is not streaming video. Then either connect to it using a terminal and send the
-  \c usbsd command, or, for short, you can just type on your host: `echo usbsd | sudo tee /dev/ttyACM0`.
-  
-- The JEVOIS partition of the microSD inside JeVois appears as a new USB flash drive on your host. It should also get
-  mounted as /media/<em>username</em>/JEVOIS/
+- 通过向 JeVois 命令行界面发出命令 \c usbsd 将 microSD 导出为虚拟 USB 闪存驱动器（请参阅 \ref UserCli ）。确保 JeVois 没有流式传输视频。然后使用终端连接到它并发送 \c usbsd 命令，或者，简而言之，您可以在主机上键入：`echo usbsd | sudo tee /dev/ttyACM0`。
+- JeVois 内部 microSD 的 JEVOIS 分区在您的主机上显示为新的 USB 闪存驱动器。它还应作为 /media/<em>username</em>/JEVOIS/ 安装
 
-- You can now copy the jvpkg to microSD with `cp Tutorial_hellojevois.jvpkg /media/<em>username</em>/JEVOIS/packages/`
+- 您现在可以使用 `cp Tutorial_hellojevois.jvpkg /media/<em>username</em>/JEVOIS/packages/` 将 jvpkg 复制到 microSD
 
-- Eject the USB flash drive and JeVois will automatically reboot and unpack and install the package.
+- 弹出 USB 闪存驱动器，JeVois 将自动重新启动并解压并安装包。
 
-With \jvversion{1.2} and later, you can just type `jevois-usbsd start` to start exporting th emicroSD, and `jevois-usbsd
-stop` to eject it and restart JeVois.
+使用 \jvversion{1.2} 及更高版本，您只需输入 `jevois-usbsd start` 即可开始导出 emicroSD，输入 `jevois-usbsd stop` 即可弹出它并重新启动 JeVois。
 
-Start \c guvcview on your host computer. Note that JeVois may take a bit more time to boot up as it is unpacking and
-installing our module. This is will be done this time only, and the package will be deleted from microSD once all its
-files have been installed.
+在主机上启动 \c guvcview 。请注意，JeVois 可能需要更多时间才能启动，因为它正在解压并安装我们的模块。这只是这次完成的操作，一旦安装完所有文件，软件包将从 microSD 中删除。
 
-Set \c guvcview to YUYV 640x480 and you will notice the new 28.5fps framerate (will show up as 57/2 in some versions of
-\c guvcview). Select it and here you are:
+将 \c guvcview 设置为 YUYV 640x480，您将注意到新的 28.5fps 帧速率（在某些版本的 \c guvcview 中将显示为 57/2）。选择它，然后您会看到：
 
 \image html HelloJeVois3.png
 
-If things go wrong here (the JeVois smart camera fails to start after you copied that .jvpkg file to
-<b>JEVOIS:/packages/</b>, or the 640x480 @ 28.5fps mode does not appear in \c guvcview), check the following:
+如果这里出现问题（将 .jvpkg 文件复制到 <b>JEVOIS:/packages/</b> 后 JeVois 智能相机无法启动，或者 \c guvcview 中未出现 640x480 @ 28.5fps 模式），请检查以下内容：
 
-- the file \b Tutorial_hellojevois.jvpkg should have disappeared from <b>JEVOIS:/packages/</b> (it is deleted after
-  successful unpacking and installation of the package);
+- 文件 \b Tutorial_hellojevois.jvpkg 应该从 <b>JEVOIS:/packages/</b> 中消失（成功解压并安装包后它会被删除）；
 
-- you should have a new directory <b>JEVOIS:/modules/Tutorial/HelloJeVois/</b> with, among others, a file \b
-  HelloJeVois.so in there (the module's executable code);
+- 您应该有一个新的目录 <b>JEVOIS:/modules/Tutorial/HelloJeVois/</b>，其中包含文件 \b HelloJeVois.so （模块的可执行代码）；
 
-- you should see the new 28.5fps mapping at the end of <b>JEVOIS:/config/videomappings.cfg</b>;
+- 您应该在<b>JEVOIS:/config/videomappings.cfg</b>的末尾看到新的 28.5fps 映射；
 
-- the file <b>JEVOIS:/modules/Tutorial/HelloJeVois/postinstall</b> should have been deleted (it is deleted after the
-  postinstall script runs).
+- 文件 <b>JEVOIS:/modules/Tutorial/HelloJeVois/postinstall</b> 应该被删除（它在 postinstall 脚本运行后被删除）。
 
-- to debug unpacking and installation issues, we recommend switching your JeVois smart camera to verbose boot (see \ref
-  Debugging) and using an FTDI cable or similar connected to the JeVois micro-serial port to monitor the boot process
-  and check for any error message during the .jvpkg unpacking and installation process (cables specifically designed for
-  JeVois are available
-  [here](https://www.jevoisinc.com/collections/accessories/products/usb-to-micro-serial-adapter-cable-3-feet-1m-long) if
-  you need one).
+- 为了调试解包和安装问题，我们建议将您的 JeVois 智能相机切换到详细启动（参见 \ref Debugging ）并使用 FTDI 电缆或类似设备连接到 JeVois 微串行端口以监视启动过程并检查 .jvpkg 解包和安装过程中是否有任何错误消息（如果需要，可以为 JeVois 专门设计的电缆 [此处](https://www.jevoisinc.com/collections/accessories/products/usb-to-micro-serial-adapter-cable-3-feet-1m-long) 提供）。
 
-Installing to JeVois hardware using the staging area of jevois-sdk
+使用 jevois-sdk 的暂存区安装到 JeVois 硬件 
 ------------------------------------------------------------------
 
-Use this method if you want to reflash the entire microSD using the latest operating system, core files, etc provided by
-jevois-sdk.
+如果您想使用 jevois-sdk 提供的最新操作系统、核心文件等重新刷新整个 microSD，请使用此方法。
 
-The entire operating system for JeVois is created under the jevois-sdk and the resulting files are placed into two
-staging directories: <b>/var/lib/jevois-build</b> for system files, and <b>/var/lib/jevois-microsd</b> for files that
-will go into the JEVOIS partition. See \ref ProgrammerOrganization for details. It can then be installed onto a fresh
-new microSD card.
+JeVois 的整个操作系统是在 jevois-sdk 下创建的，生成的文件被放置在两个暂存目录中：<b>/var/lib/jevois-build</b> 用于系统文件，<b>/var/lib/jevois-microsd</b> 用于将进入 JEVOIS 分区的文件。有关详细信息，请参阅 \ref ProgrammerOrganization 。然后可以将其安装到全新的 microSD 卡上。
 
-To include your new module into the staging area, run this:
+要将新模块包含到暂存区，请运行以下命令：
 
 \verbatim
 cd ~/hellojevois
 ./rebuild-platform.sh
 \endverbatim
 
-which will copy all the files to the staging area.
+这会将所有文件复制到暂存区。
 
-If you have a \b postinstall script in your module that adds new video mappings, those will still get appended to the
-main \b videomappings.cfg next time JeVois reboots.
+如果您的模块中有一个 \b postinstall 脚本可以添加新的视频映射，那么下次 JeVois 重新启动时，这些脚本仍会附加到主 \b videomappings.cfg 中。
 
-Then you can flash a new microSD card as usual (see \ref FlashingToSD):
+然后你就可以照常刷写一张新的 microSD 卡了（参见 \ref FlashingToSD ）：
 
 \verbatim
 sudo jevois-flash-card -y /dev/sdX
 \endverbatim
 
-(replace \b sdX above by the device for your microSD).
+（将上面的 \b sdX 替换为您的 microSD 设备）。
 
 
 */

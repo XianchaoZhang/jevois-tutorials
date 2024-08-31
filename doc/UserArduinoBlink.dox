@@ -2,47 +2,39 @@
 
 \jvversion{1.9.0}
 
-In this tutorial, we program an Arduino connected to JeVois to make it turn on its LED when a particular object is in
-sight. This is the JeVois version of the Arduino blink LED tutorial.
+在本教程中，我们对连接到 JeVois 的 Arduino 进行编程，使其在看到特定物体时打开 LED。这是 Arduino 闪烁 LED 教程的 JeVois 版本。
 
-Getting started
+入门  
 ---------------
 
-- Setup Jevois and JeVois Inventor using the other tutorials in this series
-- Download and install the Arduino software from http://arduino.cc
+- 使用本系列中的其他教程设置 Jevois 和 JeVois Inventor
+- 从 http://arduino.cc 下载并安装 Arduino 软件
 
-Approach
+方法  
 --------
 
-- We will use any of the JeVois modules that can recognize 1000 different types of objects using deep neural networks
-  trained on the ImageNet dataset. This includes the following JeVois modules: \jvmod{TensorFlowEasy},
-  \jvmod{DarknetSingle}, \jvmod{TensorFlowSingle}
+- 我们将使用任何 JeVois 模块，这些模块可以使用在 ImageNet 数据集上训练的深度神经网络识别 1000 种不同类型的对象。这包括以下 JeVois 模块：\jvmod{TensorFlowEasy}、\jvmod{DarknetSingle}、\jvmod{TensorFlowSingle}
 
-- These modules send standardized serial messages that describe what they have detected.
+- 这些模块发送标准化串行消息来描述它们所检测到的内容。
 
-- These modules only detect objects at the center of the field of view. Hence the messages are only about what was
-  detected and contain no information about where it was detected. Other modules like \jvmod{TensorFlowSaliency} or
-  \jvmod{DarknetYOLO} send more complex messages that describe both what (category) and where (bounding box) for each
-  detected object. Those are covered in another tutorial, \ref UserArduinoYOLO
+- 这些模块仅检测视野中心的物体。因此，消息仅与检测到的内容有关，不包含有关检测到的位置的信息。其他模块（如 \jvmod{TensorFlowSaliency} 或 \jvmod{DarknetYOLO}）发送更复杂的消息，描述每个检测到的对象是什么（类别）和在哪里（边界框）。这些在另一个教程 \ref UserArduinoYOLO 中介绍
 
-- We will write two Arduino programs to decode these messages:
-  + First a simple one that matches the whole message sent by JeVois to a desired message,
-  + Then a more elaborate one that parses the message sent by JeVois into tokens, using a state machine.
+- 我们将编写两个 Arduino 程序来解码这些消息：
+  + 首先是一个简单的程序，将 JeVois 发送的整个消息与所需的消息进行匹配，
+  + 然后是一个更复杂的程序，使用状态机将 JeVois 发送的消息解析为令牌。
 
-Hardware setup
+硬件设置 
 --------------
 
-- We use an Arduino compatible Pro Micro with Atmega 32u4 since this is
-  [available at jevoisinc.com](https://www.jevoisinc.com/products/atmega32u4-16mhz-5v-arduino-compatible-micro-controller)
+- 我们使用与 Atmega 32u4 兼容的 Arduino Pro Micro，因为它可以在 [jevoisinc.com](https://www.jevoisinc.com/products/atmega32u4-16mhz-5v-arduino-compatible-micro-controller) 上找到。
 
-- First let's review \ref UserSerial
+- 首先我们来回顾一下 \ref UserSerial
 
-- Then, let's find pin-out information for our Arduino on the web, for example at
-  https://cdn.sparkfun.com/assets/9/c/3/c/4/523a1765757b7f5c6e8b4567.png and reproduced here:
+- 然后，让我们在网上找到 Arduino 的引脚信息，例如 https://cdn.sparkfun.com/assets/9/c/3/c/4/523a1765757b7f5c6e8b4567.png 并在此处重现：
 
   \image html promicro.png
 
-- Finally, we solder the micro-serial cable that came with our JeVois camera to the Arduino, as follows:
+- 最后，我们将 JeVois 相机附带的微串行电缆焊接到 Arduino，如下所示：
 
 <center>
 
@@ -57,208 +49,166 @@ Hardware setup
 
   \image html arduinoconnect.jpg
 
-Test the Arduino and LED
+
+测试 Arduino 和 LED 
 ------------------------
 
-On the Pro Micro 32u4, there is no LED on the standard pin 13 (this is the LED of other models). However, there are 2
-LEDs we can use. One possible LED pin is number 17, labeled 'RX LED'.
+在 Pro Micro 32u4 上，标准引脚 13 上没有 LED（这是其他型号的 LED）。但是，我们可以使用 2 个 LED。一个可能的 LED 引脚是编号 17，标记为 'RX LED'。
 
-- In the Arduino software, go to \b File, \b Examples, \b 01.Basic, and open \b Blink
+- 在 Arduino 软件中，转到 \b File、\b Examples、\b 01.Basic，然后打开 \b Blink
 
-- Replace all instances of \b LED_BUILTIN (on recent Arduino software) or of \b 13 (on older software) in there by \b 17
+- 将其中所有 \b LED_BUILTIN 实例（在最新的 Arduino 软件中）或 \b 13 实例（在较旧的软件中）替换为 \b 17
 
   \image html ardublink.png
 
-- Connect your Arduino to your computer using a micro-USB cable.
+- 使用微型 USB 线将您的 Arduino 连接到您的计算机。
 
-- Under \b Tools, \b Board, select <b>Arduino Leonardo</b> since the pro micro model is not an official Arduino model
-  (but a third-party design). You may also have to select the \b Port.
+- 在 \b Tools、\b Board 下，选择 <b>Arduino Leonardo</b>，因为 pro micro 型号不是官方 Arduino 型号（而是第三方设计）。您可能还必须选择 \b Port。
 
-- Flash the code (Arrow-shaped button in the top left corner of the Arduino editor window).
+- 刷新代码（Arduino 编辑器窗口左上角的箭头形按钮）。
 
-- You should see the RX LED (next to pin 7) blink slowly (1 second on / 1 second off).
+- 您应该看到 RX LED（位于引脚 7 旁边）缓慢闪烁（1 秒亮/1 秒灭）。
 
-- It is not obvious now, but note that this LED is inverted: on when the pin is LOW and off when it is HIGH.
+- 现在还不明显，但请注意，这个 LED 是反转的：当引脚为低电平时亮，当引脚为高电平时熄灭。
 
-Decoding serial messages sent by JeVois
+解码 JeVois 发送的串行消息 
 ---------------------------------------
 
-Two pages of the main JeVois doc are critical here:
+JeVois 主要文档的两页在这里至关重要：
 
-- \ref UserSerialStyle for info on standardized serial messages, and
-- \ref coordhelpers for info on standardized coordinates.
+- \ref UserSerialStyle 提供有关标准化串行消息的信息，以及
+- \ref coordhelpers 提供有关标准化坐标的信息。
 
-From the doc of one of the object recognition modules, for example, \jvmod{TensorFlowEasy}, we read that:
+从其中一个对象识别模块（例如 \jvmod{TensorFlowEasy} ）的文档中，我们读到：
 
 \verbatim
-    When detections are found with confidence scores above 'thresh', a message containing up to 'top' category:score
-    pairs will be sent per video frame. Exact message format depends on the current serstyle setting and is described
-    in Standardized serial messages formatting. For example, when 'serstyle' is 'Detail', this module sends:
+    当发现置信度分数高于 'thresh' 的检测时，每个视频帧将发送一条包含最多 'top' category:score 对的消息。确切的消息格
+    式取决于当前的 serstyle 设置，并在标准化串行消息格式中描述。例如，当 'serstyle' 为 'Detail'时，此模块发送：
 
     DO category:score category:score ... category:score
 
-    where 'category' is a category name (from 'namefile') and 'score' is the confidence score from 0.0 to 100.0 that
-    this category was recognized. The pairs are in order of decreasing score.
+    其中 'category' 是类别名称（来自 'namefile'），'score' 是该类别被识别的置信度分数（从 0.0 到 100.0）。这些对按分
+    数递减的顺序排列
 \endverbatim
 
-We can further read about the messages in \ref UserSerialStyle
+我们可以进一步阅读 \ref UserSerialStyle 中的消息
 
-So now we just need to modify the Arduino program to receive and decode these strings, and to turn on the LED when
-a particular object category is detected.
+所以现在我们只需要修改 Arduino 程序来接收和解码这些字符串，并在检测到特定对象类别时打开 LED。
 
-Writing the code - whole message match
+编写代码 - 整个消息匹配 
 --------------------------------------
 
-Our approach for the Arduino code that matches the whole message from JeVois is going to be:
+我们对与 JeVois 的完整消息相匹配的 Arduino 代码的方法是：
 
-- Read a whole line of text from JeVois.
+- 阅读 JeVois 的整行文本。
 
-- Match it against a desired message in one step.
+- 只需一步即可将其与所需信息进行匹配。
 
 
-- Note that, according to the \ref UserSerialStyle, when we are in \b Terse serial message mode, only category name will
-  be sent (no ':' and score). Also, only one category name, the top-scoring one, is reported in \b Terse mode. This is
-  the default when JeVois starts up and we will use it here.
+- 请注意，根据 \ref UserSerialStyle ，当我们处于 \b Terse 串行消息模式时，只会发送类别名称（no ':' and score）。此外，在 \b Terse 模式下，只会报告一个类别名称，即得分最高的类别名称。这是 JeVois 启动时的默认设置，我们将在这里使用它。
 
-- To get started, let's fire up JeVois Inventor, select machine vision module \jvmod{TensorFlowEasy}, and turn on serial
-  output messages to both \b USB and \b 4-pin in the \b Console tab. We see object category names as we point JeVois to
-  various things:
+- 首先，让我们启动 JeVois Inventor，选择机器视觉模块 \jvmod{TensorFlowEasy} ，并在 \b Console 选项卡中打开 \b USB 和 \b 4 针的串行输出消息。当我们将 JeVois 指向各种事物时，我们会看到对象类别名称：
   
   \image html ardukeyboard.png
 
-- Let's now write our Arduino code to match those <b>TO category</b> messages:
+- 现在让我们编写 Arduino 代码来匹配这些<b>TO category</b>消息：
 
 \includelineno ardublinkez.C
 
-A few comments on the code:
+对代码的一些评论：
 
-- line 4: We use pin 17 as it is connected to a LED on our Arduino board
+- 第 4 行：我们使用引脚 17，因为它连接到 Arduino 板上的 LED
 
-- line 8: We use Serial1 as it is the port connected to pins 0 and 1 on this board
+- 第 8 行：我们使用 Serial1，因为它是连接到此板上的引脚 0 和 1 的端口
 
-- line 15: Put any ImageNet category name here, with spaces replaced by underscores
+- 第 15 行：在此处输入任意 ImageNet 类别名称，空格用下划线代替
 
-- lines 19-20: We setup the serial port. We use a timeout of 500ms. Note that JeVois by default does not send anything
-  when it does not detect anything. This timeout will allow us to stop waiting for serial data after half a second, so
-  that we can turn off the LED if it was on. Another approach would be to use frame markers as described in \ref
-  UserSerialStyle
+- 第 19-20 行：我们设置串行端口。我们使用 500ms 的超时时间。请注意，默认情况下，当 JeVois 未检测到任何内容时，它不会发送任何内容。此超时时间将允许我们在半秒后停止等待串行数据，这样我们就可以关闭 LED（如果 LED 亮着）。另一种方法是使用 \ref UserSerialStyle 中所述的帧标记
 
-- lines 22-23: We set our LED pin as output. As noted above, it is inverted, so setting it HIGH actually turns it off.
+- 第 22-23 行：我们将 LED 引脚设置为输出。如上所述，它是反转的，因此将其设置为高电平实际上会将其关闭。
 
-- lines 28-29: We read a whole line of text from serial (could be empty if we time out).
+- 第 28-29 行：我们从串行读取一整行文本（如果超时则可能为空）。
 
-- line 32: Make sure the line is null-terminated so it is a proper C string.
+- 第 32 行：确保该行以空字符结尾，因此它是一个正确的 C 字符串。
 
-- line 35: Remove any trailing white space, including CR (\\r) and LF (\\n) characters so they do not interfere with our
-  later matching.
+- 第 35 行：删除任何尾随空格，包括 CR (\\r) 和 LF (\\n) 字符，以免它们干扰我们后面的匹配。
 
-- lines 38-42: If we end up with empty data, just turn off the LED and stop here.
+- 第 38-42 行：如果最终数据为空，则关闭 LED 并在此处停止。
 
-- line 45: Compare the received message to our desired message. Remember that `strcmp()` returns 0 when the two strings
-  are equal.
+- 第 45 行：将收到的消息与我们想要的消息进行比较。请记住，当两个字符串相等时，`strcmp()` 返回 0。
 
-- lines 46-48: If it was a match, turn LED on, otherwise turn it off.
+- 第 46-48 行：如果匹配，则打开 LED，否则关闭 LED。
 
-Compile and upload the code to your Arduino and here you go!
+编译代码并将代码上传至您的 Arduino，就可以了！
 
-\image html ardublinkon.jpg Above: Arduino LED near pin 7 is on when looking at a computer keyboard
+\image html ardublinkon.jpg 上图：当看电脑键盘时，Arduino 引脚 7 附近的 LED 亮起
 
-\image html ardublinkoff.jpg Above: Arduino LED near pin 7 is off when looking at anything else
+\image html ardublinkoff.jpg 上图：当看其他东西时，Arduino 引脚 7 附近的 LED 处于熄灭状态
 
 
-Writing the code - parsing the message into tokens
+编写代码 - 将消息解析为标记 
 --------------------------------------------------
 
-While the whole message match is appropriate for our simple example, it is not scalable to more complex scenarios where
-messages may contain multiple values that should be decoded and interpreted individually. For example, the more complex
-messages when \p serstyle is \b Detail take the form
+虽然整个消息匹配适用于我们的简单示例，但它不适用于更复杂的场景，在这些场景中，消息可能包含多个值，这些值应该单独解码和解释。例如，当 \p serstyle 为 \b Detail 时，更复杂的消息采用以下形式
 
 \verbatim
 DO category:score category:score ... category:score
 \endverbatim
 
-and the various categories and scores will vary from message to message. These messages reflect the probabilistic nature
-of the object recognition deep network, which may output multiple guesses about what it is seeing, each with a
-confidence score. For example,
+并且各个类别和分数会因消息而异。这些消息反映了对象识别深度网络的概率性质，它可能会输出关于它所看到内容的多个猜测，每个猜测都有一个置信度分数。例如，
 
 \verbatim
 DO dog:53.6 cat:42.3
 \endverbatim
 
-reflects that the deep network is hesitant and thinks it might be looking at a dog (with confidence 53.6), or possibly a
-cat (with confidence 42.3).
 
-Note that \jvmod{TensorFlowEasy} already applies a threshold to confidence scores (see parameter \p thresh of the
-module), so that only categories that score above that threshold are reported.
+反映了深度网络犹豫不决，认为它可能正在看一只狗（置信度为 53.6），或者可能是一只猫（置信度为 42.3）。
 
-Let's see how we could parse these messages, so that our Arduino now blinks if any of the categories in the list is a
-match, i.e., the LED should still turn on if \b computer_keyboard was the second or third guess.
+请注意，\jvmod{TensorFlowEasy} 已经对置信度分数应用了阈值（参见模块的参数 \p thresh ），因此只报告得分高于该阈值的类别。
 
-Our approach for the Arduino code that parses the message from JeVois is going to be:
+让我们看看如何解析这些消息，以便我们的 Arduino 现在在列表中的任何类别匹配时闪烁，即如果 \b computer_keyboard 是第二或第三个猜测，LED 仍然应该亮起。
 
-- Set parameter \p serstyle to \b Detail so we get the detailed messages as above and as explained in \ref
-  UserSerialStyle, and turn on serial output messages to both \b USB and \b 4-pin in the \b Console tab. We see object
-  category names as we point JeVois to various things:
+我们对解析 JeVois 消息的 Arduino 代码的方法如下：
+
+- 将参数 \p serstyle 设置为 \b Detail ，这样我们就可以得到如上所述的详细消息，并按照 \ref UserSerialStyle 中的说明进行操作，然后在 \b Console 选项卡中打开 \b USB 和 \b 4 针的串行输出消息。当我们将 JeVois 指向各种事物时，我们会看到对象类别名称：
 
   \image html ardukeyboard2.png
 
-- Note that by default, the floating-point precision of the standardized messages is zero digit after the decimal point,
-  i.e., we get integer scores. If you change that using the parameter \p serprec described in \ref UserSerialStyle, you
-  can get more precise floating-point values (e.g., try `setpar serprec 3` in the Console of JeVois Inventor). For the
-  code below, we will assume floating point values which could be integers as well.
+- 请注意，默认情况下，标准化消息的浮点精度为小数点后零位，即我们得到整数分数。如果使用 \ref UserSerialStyle 中描述的参数 \p serprec 进行更改，则可以获得更精确的浮点值（例如，在 JeVois Inventor 的控制台中尝试 `setpar serprec 3`）。对于下面的代码，我们将假设浮点值也可以是整数。
 
-- Our code hence will first read a whole line of text from JeVois.
+- 因此，我们的代码将首先从 JeVois 读取整行文本。
 
-- Then, decode it into tokens, where successive tokens are separated by white space.
+- 然后，将其解码为标记，其中连续的标记由空格分隔。
 
-- Parse the tokens using a <b>state machine</b>. In this case, the state machine will be very simple: an integer
-  variable will keep track of how far we are with parsing the tokens. We call it the \b state. The \b machine is our
-  algorithm that does something in each state, then possibly transitions to a different state. Here:
-  
-  + We start with state=0 when a new line of text has been received and we start parsing it. We then look for the
-    first token and check that it is \b DO (which is the symbol for object in Detail mode). If so, we move to the
-    next step, by changing to state=1.
-  + When state is 1 we want to decode the first <b>category:score</b> chunk. If it is a match with the desired
-    category, we switch to state 2.
-  + And that's pretty much it. We now have a <b>state machine</b> message parser!
+- 使用 <b>state machine</b> 解析标记。在这种情况下，状态机非常简单：一个整数变量将跟踪我们解析标记的进度。我们称之为 \b state 。\b machine 是我们的算法，它在每个状态下执行某些操作，然后可能转换到不同的状态。这里： 
+  + 当收到新一行文本时，我们从 state=0 开始，然后开始解析它。然后，我们查找第一个标记并检查它是否是 \b DO （这是详细信息模式下对象的符号）。如果是，我们转到下一步，更改为 state=1。
+  + 当状态为 1 时，我们想要解码第一个 <b>category:score</b> 块。如果它与所需的类别匹配，我们将切换到状态 2。
+  + 就是这样。我们现在有一个 <b>state machine</b> 消息解析器！
 
 \includelineno ardublink.C
 
-A few comments on the code:
+对代码的一些评论：
 
-- lines 1-29: Same setup and preliminaries as in our previous code.
+- 1-29 行：与我们之前的代码相同的设置和准备工作。
 
-- line 31: We start our tokenizer at the start of the line of text received from JeVois. `strtok()` is a standard C
-  function, see Arduino docs or other standard C/C++ docs like http://www.cplusplus.com/reference/cstring/strtok/ At
-  this stage, \p tok points to the first chunk of characters until the first white space.
+- 第 31 行：我们从从 JeVois 收到的文本行开头启动我们的标记器。`strtok()` 是一个标准 C 函数，请参阅 Arduino 文档或其他标准 C/C++ 文档，如 http://www.cplusplus.com/reference/cstring/strtok/。在此阶段，\p tok 指向第一个字符块，直到第一个空格。
 
-- line 32: We start in state 0, which we decide means 'start of line'.
+- 第 32 行：我们从状态 0 开始，我们将其表示为“行的开始”。
 
-- line 34: We will loop until we run out of space-separated tokens.
+- 第 34 行：我们将循环，直到用完空格分隔的标记。
 
-- lines 44-47: If we are in state 0, we expect that the first token should be \b DO; if so, advance to state 1;
-  otherwise switch to state 1000 which we decide means some other kind of message was received which we will not handle.
-  We are done with this first token and break out of the `switch()` statement. We will then advance to the next token
-  on line 76. Remember that `strcmp()` returns 0 when both strings are equal.
+- 第 44-47 行：如果我们处于状态 0，我们预计第一个标记应该是 \b DO ；如果是这样，则前进到状态 1；否则切换到状态 1000，我们认为这意味着收到了某种我们不会处理的其他类型的消息。我们处理完第一个标记后，跳出 `switch()` 语句。然后，我们将前进到第 76 行的下一个标记。请记住，当两个字符串相等时，`strcmp()` 返回 0。
 
-- lines 50-65: If we are in state 1, we have successfully parsed the first token as \b DO, and we are looking at the
-  second token now, which should be of the form <b>category:score</b>. We look for the ':' separator starting from the
-  end of the token and moving backwards to the start. If we found it, we replace it by a \0 string termination
-  character, to isolate the category name. If that is equal to the category we want, advance to state 2. Otherwise, stay
-  in state 1 so that we will try again to decode the next token in the list, after line 76 advances us to the next
-  token.
+- 第 50-65 行：如果我们处于状态 1，则我们已成功将第一个标记解析为 \b DO ，现在我们正在查看第二个标记，其格式应为 <b>category:score</b>。我们从标记的末尾开始查找 ':' 分隔符，然后向后移动到开头。如果找到了，我们用 \0 字符串终止符替换它，以隔离类别名称。如果它等于我们想要的类别，则前进到状态 2。否则，停留在状态 1，这样我们将在第 76 行将我们推进到下一个标记后再次尝试解码列表中的下一个标记。
 
-- lines 81-84: We have parsed all the tokens. If we are in state 2, we have detected our desired object, turn on the
-  led (by setting it LOW on this inverted led). Otherwise, turn it off (by setting HIGH).
+- 第 81-84 行：我们已解析所有标记。如果我们处于状态 2，则我们已检测到所需对象，打开 LED（通过在此倒置 LED 上将其设置为 LOW）。否则，将其关闭（通过设置为 HIGH）。
 
-This code should behave like the previous one, but remember that you need \p serstyle to be \b Detail for the messages
-to be decoded by the Arduino now. The LED should still turn on even if the desired category was second guess, third
-guess, etc.
+此代码的行为应与上一个代码类似，但请记住，现在需要将 \p serstyle 改为 \b Detail ，这样 Arduino 才能解码消息。即使所需类别是第二次猜测、第三次猜测等，LED 仍应亮起。
 
-Going further
+进一步 
 -------------
 
-Check out these other tutorials. They use similar state machine decoding:
+查看其他教程。它们使用类似的状态机解码：
 
 - \ref UserArduinoYOLO
 - \ref ArduinoTutorial
@@ -266,3 +216,4 @@ Check out these other tutorials. They use similar state machine decoding:
 - \ref UserRobotCar
 
 */
+

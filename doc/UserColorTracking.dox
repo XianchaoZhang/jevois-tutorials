@@ -1,120 +1,91 @@
-/*! \page UserColorTracking Tuning the color-based object tracker using a python graphical interface
+/*! \page UserColorTracking 使用 Python 图形界面调整基于颜色的对象跟踪器
 
 
-The color-based object tracker of JeVois is a simple but fast and effective way of tracking objects defined by a
-specific color. The behavior of the module can be fine-tuned by setting ranges for the hue (color tint), saturation
-(color fade), and value (color brightness) of the objects to track. While this can be achieved by hand, by using the
-approach studied in \ref UserParameters, quickly one becomes tired of typing many \c setpar commands while searching for
-appropriate settings of the 6 color-related parameters (hue min and max, saturation min and max, and value min and max).
+JeVois 的基于颜色的对象跟踪器是一种简单但快速有效的跟踪由特定颜色定义的对象的方法。可以通过设置要跟踪的对象的色调（颜色色调）、饱和度（颜色 tint）和值（颜色亮度）的范围来微调模块的行为。虽然这可以通过手动实现，但通过使用 \ref UserParameters 中研究的方法，人们很快就会厌倦输入许多 \c setpar 命令，同时搜索 6 个与颜色相关的参数（色调最小值和最大值、饱和度最小值和最大值以及值最小值和最大值）的适当设置。
 
-\note Note that since June 2018 it may be easier to use \ref JeVoisInventor.  The instructions below do not require
-JeVois Inventor are are provided in case you do not want to use the Inventor.
+\note 请注意，自 2018 年 6 月起，使用 \ref JeVoisInventor 可能会更容易。以下说明不需要 JeVois Inventor，以防您不想使用 Inventor。
 
-Here we write a simple graphical user interface in python to tune the parameters.
+这里我们用 python 编写了一个简单的图形用户界面来调整参数。
 
-Hence, in this tutorial you will learn:
+因此，在本教程中您将学习：
 
-- How to tune the \jvmod{ObjectTracker} module to track any color you like.
-- How to communicate with JeVois from a python script.
-- How to develop a simple python GUI with sliders that update JeVois parameters when they are modified.
+- 如何调整 \jvmod{ObjectTracker} 模块以跟踪您喜欢的任何颜色。
+- 如何通过 Python 脚本与 JeVois 通信。
+- 如何开发带有滑块的简单 Python GUI，用于在修改 JeVois 参数时对其进行更新。
 
-Getting started
+入门
 ---------------
 
-- This tutorial assumes a Linux host computer.
+- 本教程假设使用 Linux 主机。
 
-- Connect JeVois to a host computer.
+- 将 JeVois 连接到主机。
 
-- Start video capture software and select <b>YUYV 320x254 @ 60.0 fps</b> which should launch the \jvmod{ObjectTracker}
+- 启动视频捕捉软件并选择 <b>YUYV 320x254 @ 60.0 fps</b>，这将启动 \jvmod{ObjectTracker}
 
-- Start a serial terminal and connect to the serial-over-USB port of JeVois.
+- 启动串行终端并连接到 JeVois 的串行 USB 端口。
 
-Available parameters
+可用参数 
 --------------------
 
-Typing \c help in your serial terminal or inspecting the documentation of [Object
-Tracker](http://jevois.org/moddoc/ObjectTracker/modinfo.html) reveals several parameters. Here we will focus on the \b
-hrange, \b srange, and \b vrange parameters, which define the range of hue, saturation, and value that we want to track.
+在串行终端中输入 \c help 或查看 [Object Tracker](http://jevois.org/moddoc/ObjectTracker/modinfo.html) 的文档，可以看到几个参数。这里我们将重点介绍 \b hrange、\b srange 和 \b vrange 参数，它们定义了我们想要跟踪的色调、饱和度和值的范围。
 
-If you are not familiar with the HSV color space, check out this [Wikipedia
-page](https://en.wikipedia.org/wiki/HSL_and_HSV).
+如果您不熟悉 HSV 颜色空间，请查看此 [维基百科页面](https://en.wikipedia.org/wiki/HSL_and_HSV)。
 
-Each of these three parameters is a range, that is, we can change them by specifying both the minimum and maximum
-values, separated by ..., for example, try:
+这三个参数中的每一个都是一个范围，也就是说，我们可以通过指定最小值和最大值来更改它们，以 ... 分隔，例如，尝试：
 
 \verbatim
 setpar hrange 10...200
 \endverbatim
 
-A more user-friendly way
+更加用户友好的方式 
 ------------------------
 
-We write a simple python script that creates some sliders that one can drag with the mouse. When the sliders are
-updated, we send the appropriate \c setpar command to JeVois. Consider this starter python script, which is located in
-<b>~/jevois-tutorials/doc/snip/objectrackertuning.py</b>:
+我们编写了一个简单的 Python 脚本，创建了一些可以用鼠标拖动的滑块。当滑块更新时，我们会向 JeVois 发送相应的 \c setpar 命令。请考虑这个入门 Python 脚本，它位于 <b>~/jevois-tutorials/doc/snip/objectrackertuning.py</b>：
 
 \includelineno objectrackertuning.py
 
-We basically create 6 slider widgets (for the 3 ranges), and we attach a callback to each slider which will update the
-corresponding global variable and then send the corresponding updated range of values to JeVois.
+我们基本上创建了 6 个滑块小部件（用于 3 个范围），并且我们将回调附加到每个滑块，它将更新相应的全局变量，然后将相应的更新值范围发送给 JeVois。
 
-- If you have not already done so, get a copy of the JeVois tutorials by opening a terminal and typing <code>git clone
-  https://github.com/jevois/jevois-tutorials.git</code>
+- 如果您还没有这样做，请打开终端并输入 <code>git clone https://github.com/jevois/jevois-tutorials.git</code> 获取 JeVois 教程的副本
 
-- Before you use the script, quit your serial terminal if you had started it, or you may get an error that the serial
-  port is busy.
+- 在使用脚本之前，如果已启动串行终端，请退出它，否则您可能会收到串行端口忙的错误。
 
-- Make sure the python TKinter and pySerial modules are installed, for example run <code>sudo apt-get install python
-  python-tk python-serial</code>
+- 确保安装了 python TKinter 和 pySerial 模块，例如运行 <code>sudo apt-get install python python-tk python-serial</code>
 
-- Make sure you are currently grabbing video in <b>YUYV 320x254 @ 60.0 fps</b>, so that the \jvmod{ObjectTracker} module
-  is loaded and running on JeVois.
+- 确保您当前正在以 <b>YUYV 320x254 @ 60.0 fps</b> 格式抓取视频，以便 \jvmod{ObjectTracker} 模块在 JeVois 上加载并运行。
 
-- Then run the script:
+- 然后运行脚本：
   \verbatim
   ~/jevois-tutorials/doc/snip/objectrackertuning.py 
   \endverbatim
-  \note If you get some <b>permission denied</b> error, make sure you have permission to access the JeVois
-        serial-over-USB device (see \ref USBserialLinux)
+  \note 如果您收到某些<b>permission denied</b>错误，请确保您有权访问 JeVois 串行 USB 设备（请参阅\ref USBserialLinux ）
 
-- You should see something like this:
+- 您应该看到类似这样的内容：
   \image html UserColorTrackingGUI.png
 
-- Go ahead and play with the sliders. Recommended approach is as follows:
-  + Widen all 3 ranges to 0...255 (that is, set Hue min to 0, Hue max to 255, etc)
-  + Point JeVois to a scene containing the object you are interested in, as well as a bunch of other objects that you
-    are not interested in. Indeed, our goal will be to detect the objects of interest while rejecting (not detecting)
-    other objects. The object should be big enough but not too big in the video captured by JeVois (another parameter in
-    \jvmod{ObjectTracker} called \p objectarea is by default set to look for objects of size between roughly 20x20
-    and 100x100 pixels). The \jvmod{ObjectTracker} module draws green contours around all regions that are within
-    the specified HSV range. Regions that also fit the area range are declared good detection and get an additional
-    green circle drawn onto them.
-  + Narrow down the Hue range (increase Hue min until just before you start losing the green contours around your
-    object, then decrease Hue max likewise).
-  + Then proceed with narrowing the Saturation and Value ranges.
-  + Look at your objects of interest and at other things from various viewpoints, etc and fine tune the ranges.
+- 继续使用滑块。推荐方法如下：
+  + 将所有 3 个范围扩大到 0...255（即，将 Hue min 设置为 0，将 Hue max 设置为 255，等等）
+  + 将 JeVois 指向包含您感兴趣的对象以及一堆您不感兴趣的其他对象的场景。事实上，我们的目标是检测感兴趣的对象，同时拒绝（不检测）其他对象。该对象在 JeVois 捕获的视频中应该足够大但不能太大（\jvmod{ObjectTracker} 中的另一个参数 \p objectarea 默认设置为查找大小在 20x20 和 100x100 像素之间的对象）。\jvmod{ObjectTracker} 模块在指定 HSV 范围内的所有区域周围绘制绿色轮廓。也适合区域范围的区域被声明为良好检测，并在其上绘制一个额外的绿色圆圈。
+  + 缩小色调范围（增加色调最小值，直到开始丢失物体周围的绿色轮廓之前，然后同样减少色调最大值）。
+  + 然后继续缩小饱和度和值范围。
+  + 从各个角度等观察您感兴趣的物体和其他事物，并微调范围。
 
 
-Video of this tutorial in action
+本教程的实际视频
 --------------------------------
 
 \youtube{sVrbcfGwAgk}
 
-Where to go from here
+从这往哪儿走 
 ---------------------
 
-You can further improve upon this tutorial in many ways. Here are some suggestions:
+您可以通过多种方式进一步改进本教程。以下是一些建议：
 
-- Add widgets for the other parameters of the module, such as \p erodesize, \p dilatesize, etc
+- 为模块的其他参数添加小部件，例如 \p erodesize、\p dil​​atesize 等
 
-- Combine the min and max values into a fancier widget for a range, maybe a slider with 2 cursors, if such thing exists.
+- 将最小值和最大值组合成一个范围的更精美的小部件，可能是带有 2 个光标的滑块（如果存在这样的东西）。
 
-- Integrate the video capture into the python GUI, so that we do not have to start guvcview separately. Have a look <a
-  href="http://jevois.org/qa/index.php?qa=114">here</a> to get started. You will need to figure out how to handle video
-  streaming in parallel with the GUI, as in this tutorial we end up just passing the control to the GUI's main
-  loop. This <a
-  href="http://www.pyimagesearch.com/2016/05/30/displaying-a-video-feed-with-opencv-and-tkinter/">pyimagesearch
-  tutorial</a> may be a good starting point.
+- 将视频捕获集成到 Python GUI 中，这样我们就不必单独启动 guvcview。请查看<a href="http://jevois.org/qa/index.php?qa=114">此处</a>以开始使用。您需要弄清楚如何与 GUI 并行处理视频流，因为在本教程中，我们最终只是将控制权传递给 GUI 的主循环。这个<a href="http://www.pyimagesearch.com/2016/05/30/displaying-a-video-feed-with-opencv-and-tkinter/">pyimagesearch 教程</a>可能是一个很好的起点。
 
 
 */

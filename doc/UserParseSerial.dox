@@ -1,39 +1,31 @@
-/*! \page UserParseSerial Parsing serial messages from JeVois using Python
+/*! \page UserParseSerial 使用 Python 解析来自 JeVois 的串行消息
 
-Many machine vision modules running on JeVois send messages over serial port (either the hardware 4-pin connector, or
-the serial-over-USB port) to indicate what they have found (e.g., detected ArUco marker IDs, decoded QR-Code contents,
-identified TensorFlow objects).
-
+许多在 JeVois 上运行的机器视觉模块通过串行端口（硬件 4 针连接器或串行 USB 端口）发送消息来指示它们发现了什么（例如，检测到的 ArUco 标记 ID、解码的 QR-Code 内容、识别的 TensorFlow 对象）。
 
 Objective
 ---------
 
-In this tutorial, we will write a simple Python program to read and parse the messages sent by JeVois over serial.
+在本教程中，我们将编写一个简单的 Python 程序来读取和解析 JeVois 通过串行发送的消息。
 
 Getting started
 ---------------
 
-- Connect JeVois to a host computer.
+- 将 JeVois 连接到主机。
 
-- Start video capture software and select <b>YUYV 640x500 @ 20.0 fps</b> which should launch the \jvmod{DemoArUco}
-  machine vision module
+- 启动视频捕捉软件并选择<b>YUYV 640x500 @ 20.0 fps</b>，这将启动 \jvmod{DemoArUco} 机器视觉模块
 
-- Connect to JeVois using a serial terminal, and issue:
+- 使用串行终端连接到 JeVois，并发出：
   \verbatim
-setpar serout USB
-setpar serstyle Normal
+N2 id x y w h
   \endverbatim
-  to instruct JeVois to send any detections to the serial-over-USB port, and to use the Normal standardized
-  message format.
+  指示 JeVois 将任何检测发送到串行 USB 端口，并使用 Normal 标准化消息格式。
 
-- See \ref UserSerialStyle for more information about standardized message formats. Since \jvmod{DemoArUco} sends 2D
-  messages and we selected the Normal format, we expect messages formatted as:
+- 有关标准化消息格式的更多信息，请参阅 \ref UserSerialStyle 。由于 \jvmod{DemoArUco} 发送 2D 消息，并且我们选择了 Normal 格式，因此我们期望消息格式为：
   \verbatim
 N2 id x y w h
   \endverbatim
 
-- Point JeVois towards some ArUco marker and confirm that you see these messages in your serial console. Use the
-  screenshots from the documentation page of \jvmod{DemoArUco} for example. You should see someghing like this:
+- 将 JeVois 指向某个 ArUco 标记，并确认您在串行控制台中看到这些消息。例如，使用 \jvmod{DemoArUco} 文档页面中的屏幕截图。您应该看到类似这样的内容：
   \verbatim
 N2 U18 -322 -369 444 419
 N2 U5 352 259 434 450
@@ -47,28 +39,25 @@ N2 U18 -294 -342 438 428
   \endverbatim
 
 
-The Python program
+Python 程序 
 ------------------
 
-- Now, quit your serial terminal so that it will not interfere with out Python program.
+- 现在，退出您的串行终端，以便它不会干扰我们的 Python 程序。
 
-- Make sure you have pyserial installed, it is a python module which we will use for serial communication with
-  JeVois. For example, on Ubuntu: `sudo apt install python-serial`
+- 确保已安装 pyserial，它是一个 python 模块，我们将使用它与 JeVois 进行串行通信。例如，在 Ubuntu 上：`sudo apt install python-serial`
 
-- Check out the docs of PySerial here: https://pythonhosted.org/pyserial/
+- 在此处查看 PySerial 的文档：https://pythonhosted.org/pyserial/
 
-- Using your favorite editor, create \b parseserial.py with these contents:
+- 使用您最喜欢的编辑器，创建包含以下内容的 \b parseserial.py：
 
 \includelineno snip/parseserial.py
 
-- remember to edit the value of \p serdev in the Python code to be the name of the serial port for your JeVois camera:
-  same name as you use with your serial terminal program; typically:
-  + On Linux: /dev/ttyACM0
-  + On Mac: /dev/tty.usbmodem*
-  + On WIndows: COM3:
+- 记得将 Python 代码中的 \p serdev 的值编辑为 JeVois 相机的串行端口名称：与串行终端程序使用的名称相同；通常：
+  + 在 Linux 上：/dev/ttyACM0
+  + 在 Mac 上：/dev/tty.usbmodem*
+  + 在 WIndows 上：COM3：
 
-- Point JeVois towards some ArUco marker and confirm that you see these messages in the terminal in which you launched
-  the \b parseserial.py program:
+- 将 JeVois 指向某个 ArUco 标记，并确认您在启动 \b parseserial.py 程序的终端中看到这些消息：
   \verbatim
 received: 
 received: 
@@ -87,22 +76,17 @@ received: N2 U48 84 253 363 363
 Found ArUco U48 at (84,253) size 363x363
   \endverbatim
 
-Note how the empty "received:" statements are because we have a chosen timeout of 1 second when opening the serial port,
-and JeVois was not looking at any ArUco for the first 5 seconds of this example.
+请注意 "received:" 语句为空，是因为我们在打开串行端口时选择了 1 秒的超时时间，并且 JeVois 在该示例的前 5 秒内没有查看任何 ArUco。
 
 Troubleshooting
 ---------------
 
-If you see nothing, review this:
+如果你什么也没看到，请查看以下内容：
 
-- permissions ok on the serial port? correct serial device/name? No other program using the serial port (e.g., a serial
-  terminal)?
+- 串口上的权限是否正确？串口设备/名称是否正确？没有其他程序使用串口（例如，串口终端）？
 
-- do you have a module running and is it streaming? If you are seeing live video in a video capture software then you
-  are ok. If you started your module with no USB video out using `setmapping2`, did you also send a `streamon`?
-  
-- Was `setpar serout USB` issued (if listening to the serial-over-USB), or `setpar serout Hard` (if listening to the
-  4-pin port)?
+- 您的模块是否正在运行并且正在流式传输？如果您在视频捕获软件中看到实时视频，则一切正常。如果您使用 `setmapping2` 启动模块时没有 USB 视频输出，您是否还发送了 `streamon`？
+- 是否发出了 `setpar serout USB` （如果监听 USB 串行），或 `setpar serout Hard`（如果监听 4 针端口）？
 
 */
 

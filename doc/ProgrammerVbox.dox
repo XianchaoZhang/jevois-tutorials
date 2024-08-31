@@ -1,96 +1,79 @@
-/*! \page ProgrammerVbox Using the pre-installed jevois-sdk VirtualBox for development
+/*! \page ProgrammerVbox 使用预装的 jevois-sdk VirtualBox 进行开发
 
-Starting with \jvversion{1.12.0}, we provide a pre-configured and pre-installed VirtualBox image to facilitate getting
-started with programming JeVois in C++.
+从 \jvversion{1.12.0} 开始，我们提供了预先配置和预安装的 VirtualBox 映像，以方便开始使用 C++ 编程 JeVois。
 
-To create the VirtualBox image, we have gone through the following steps:
+为了创建 VirtualBox 映像，我们经历了以下步骤：
 
 \youtube{pgd7pW1XDU8}
 
-- installing Ubuntu 18.04 (bionic) on VirtualBox
-- installing the jevois ubuntu (.deb) packages
-- installing jevois-inventor and trying it out
-- getting the latest jevois source code from github
-- compiling that source code, both for host (your Intel computer) and platform (the ARM CPU inside JeVois)
-- flashing the freshly compiled code to microSD
+- 在 VirtualBox 上安装 Ubuntu 18.04 (bionic)
+- 安装 jevois ubuntu (.deb) 软件包
+- 安装 jevois-inventor 并试用
+- 从 github 获取最新的 jevois 源代码
+- 编译该源代码，适用于主机（您的 Intel 计算机）和平台（JeVois 内的 ARM CPU）
+- 将新编译的代码刷入 microSD
 
-Now you can install and run this pre-configured and pre-installed virtual machine.
+现在您可以安装并运行这个预先配置和预安装的虚拟机。
 
-Installing and running the machine
+安装并运行机器 
 ----------------------------------
 
-- Download the latest virtual disk image (vdi) from http://jevois.org/start/software.html
+- 从 http://jevois.org/start/software.html 下载最新的虚拟磁盘映像 (vdi)
 
-- Unpack it using a 7-zip (7z) unpacker. Beware that it will unpack to a 25GB file, and the virtual disk was set to be
-allowed to grow to up to 50GB so make sure you have plenty of of disk space.
+- 使用 7-zip (7z) 解压程序解压。请注意，它将解压为一个 25GB 的文件，并且虚拟磁盘设置为允许增长到 50GB，因此请确保您有足够的磁盘空间。
 
-- Download and install the latest version of VirtualBox, and the latest extensions pack (important).
+- 下载并安装最新版本的 VirtualBox 和最新的扩展包（重要）。
 
-- If your host computer runs Linux, you need to run this to allow access to USB ports:
+- 如果您的主机运行 Linux，您需要运行此命令以允许访问 USB 端口：
 \verbatim
 sudo adduser $USER vboxusers
 \endverbatim
 
-- Reboot your computer. Mac users: yes, really, you need to reboot your mac, otherwise video capture in VirtualBox
-  will not work. Linux users: same for you, you must reboot. Windows users: you are used to doing this!
+- 重启电脑。Mac 用户：是的，您确实需要重启 Mac，否则 VirtualBox 中的视频捕获将无法工作。Linux 用户：您也一样，必须重启。Windows 用户：您已经习惯了这样做！
 
-- Start VirtualBox and create a new virtual machine. Pick a name (here, \a ubusdk) and configure it as Linux Ubuntu
-  64-bit.
+- 启动 VirtualBox 并创建一个新的虚拟机。选择一个名称（此处为 \a ubusdk ）并将其配置为 Linux Ubuntu 64 位。
 
 \jvimg{sdkvbox1.png, 25%}
 
-- Select a good memory size depending on your hardware usually going with the recommended size at the limit between
-  green and red works well; on this machine with 768GB of RAM I selected 100GB which should be plenty for the virtual
-  machine).
+- 根据您的硬件选择一个好的内存大小，通常采用绿色和红色之间的界限内的推荐大小效果很好;在这台有 768GB RAM 的机器上，我选择了 100GB，这对于虚拟机来说应该足够了。
 
 \jvimg{sdkvbox2.png, 25%}
 
-- Select to use an existing virtual hard disk image and using the file chooser icon at the right of the name pick the
-  .vdi file you downloaded and unpacked.
+- 选择使用现有的虚拟硬盘映像，然后使用名称右侧的文件选择器图标选择您下载并解压的.vdi 文件。
 
 \jvimg{sdkvbox3.png, 25%}
 
-- Before you launch your virtual machine, click on its settings and adjust the number of processor cores. Again select
-  the recommended number at the limit between green and red (here, it looks like VirtualBox maxes out at 32 cores on
-  this 96-core machine),
+- 在启动虚拟机之前，单击其设置并调整处理器核心数。再次选择绿色和红色之间的极限值处的推荐数量（此处，VirtualBox 似乎在这台 96 核机器上最多使用 32 个核心），
 
 \jvimg{sdkvbox4.png, 25%}
 
-- Then you need to install USB device filters. This is so that your JeVois camera and your USB to microSD adapter (which
-  you will use to flash new microSD cards for JeVois) will be made available to your virtual machine as opposed to being
-  used by the host computer when you plug them in. Plug in a working JeVois camera (with microSD card inside) and a USB
-  to microSD adapter with a microSD card inside (you can do these one after the other if you only have one card). They
-  will be detected by your host computer and will be made available to the host by default. Now in the settings of your
-  virtual machine, go to \a USB (or, on some versions of VirtualBox, go to \s Ports and then click on \a USB).
+- 然后您需要安装 USB 设备过滤器。这样，您的 JeVois 相机和 USB 转 microSD 适配器（您将使用它来为 JeVois 刷入新的 microSD 卡）将可供虚拟机使用，而不是在您插入时由主机使用。插入一个正常工作的 JeVois 相机（内置 microSD 卡）和一个内置 microSD 卡的 USB 转 microSD 适配器（如果您只有一张卡，您可以一个接一个地执行这些操作）。主机将检测到它们，并且默认情况下将提供给主机。现在，在虚拟机的设置中，转到 \a USB（或者，在某些版本的 VirtualBox 中，转到 \s 端口，然后单击 \a USB）。
 
-- Select USB 3.0 xHCI
+- 选择 USB 3.0 xHCI
 
-- Click on the little icon with a USB plug and a '+' to add a USB filter; add one for JeVois and one for your microSD
-  adapter (here a Transcend brand):
+- 单击带有 USB 插头和 '+' 的小图标以添加 USB 过滤器；为 JeVois 添加一个，为您的 microSD 适配器添加一个（这里是 Transcend 品牌）：
 
 \jvimg{sdkvbox5.png, 40%}
 
-- You should now have both filters installed. Disconnect both JeVois and the microSD adapter.
+- 现在您应该已经安装了两个过滤器。断开 JeVois 和 microSD 适配器。
 
 \jvimg{sdkvbox6.png, 25%}
 
-- Start your virtual machine and let it boot. It will auto-login user \a jevois (or user \a jv on the 1.20.0 release).
+- 启动虚拟机并让其启动。它将自动登录用户 \a jevois （或 1.20.0 版本上的用户 \a jv ）。
 
-- If you need it for sudo, password is \a jevois
+- 如果你需要 sudo，密码是 \a jevois
 
-- Connect JeVois and start jevois-inventor by double-clicking the icon on the Ubuntu desktop. If JeVois is not detected,
-  you may have to enable the filter again by clicking (right-click on some machines) on the little USB plug icon at the
-  bottom right of the virtual machine's screen. You can do the same thing with your flash card reader.
+- 连接 JeVois 并通过双击 Ubuntu 桌面上的图标来启动 jevois-inventor。如果未检测到 JeVois，您可能需要通过单击（在某些机器上右键单击）虚拟机屏幕右下角的小 USB 插头图标来再次启用过滤器。您可以对闪存卡读卡器执行相同的操作。
 
 \jvimg{sdkvbox7.png, 40%}
 
-- You should now see JeVois detected by the Inventor.
+- 您现在应该看到 Inventor 检测到了 JeVois。
 
 \jvimg{sdkvbox8.png, 40%}
 
-- We already installed all the necessary packages. So you are ready to compile code.
+- 我们已经安装了所有必要的软件包。因此您可以开始编译代码了。
 
-- For example, start a terminal (CTRL-ALT-T), and type
+- 例如，启动终端（CTRL-ALT-T），然后输入 
 \verbatim
 jevois-create-module MyVendor MyModule # or jevoispro-create-module
 cd mymodule
@@ -98,30 +81,24 @@ cd mymodule
 ./rebuild-platform.sh   # or ./rebuild-pro-platform-pdeb.sh
 \endverbatim
 
-which will compile and then cross-compile the module. You should get no error, indicating that all jevois tools,
-cross-compilers, libraries, etc are properly installed and ready to go.
+这将编译模块，然后交叉编译模块。您应该不会收到任何错误，这表明所有 jevois 工具、交叉编译器、库等都已正确安装并准备就绪。
 
-\jva33: `./rebuild-platform.sh` will create a .jvpkg package that you should copy to JEVOIS:/packages/ on your
-microSD. Next time the camera reboots, it will install the package.
+\jva33：`./rebuild-platform.sh` 将创建一个 .jvpkg 包，您应将其复制到 microSD 上的 JEVOIS:/packages/。下次相机重新启动时，它将安装该包。
 
-\jvpro: `./rebuild-pro-platform-pdeb.sh` will create a .deb package that you can copy to microSD and then install
-using `dpkg -i /path/to/package.deb`
+\jvpro: `./rebuild-pro-platform-pdeb.sh` 将创建一个 .deb 包，您可以将其复制到 microSD，然后使用 `dpkg -i /path/to/package.deb` 安装
 
 \jvimg{sdkvbox9.png, 40%}
 
-Next steps
+下一步 
 ----------
 
-You are now ready to go over the \ref Programmer
+现在你已经准备好阅读 \ref Programmer
 
-You can skip \ref Virtualbox
+你可以跳过 \ref Virtualbox
 
-And, in \ref CompilingJeVois we have already fetched the repositories from github into the home directory of user jevois
-of the virtual machine. You can just do a `git pull` inside each of \b jevois, \b jevoisbase, etc if you want to pull
-the latest version (which may not be stable -- don't do it until you are ready for it, the version that is already in
-there by default is stable).
+而且，在 \ref CompilingJeVois 中，我们已经将存储库从 github 提取到虚拟机用户 jevois 的主目录中。如果您想提取最新版本（可能不稳定 - 在您准备好之前不要这样做，默认情况下已经存在的版本是稳定的），您只需在 \b jevois 、\b jevoisbase 等中执行 `git pull` 即可。
 
-Then check out the other \ref ProgrammerTutorials
+然后查看其他 \ref ProgrammerTutorials
 
 */
 

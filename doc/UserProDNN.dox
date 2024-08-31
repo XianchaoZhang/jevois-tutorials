@@ -1,11 +1,10 @@
-/*! \page UserProDNN Converting Deep Neural Networks for JeVois-Pro
+/*! \page UserProDNN 将深度神经网络转换为 JeVois-Pro
 
 
-Model conversion
-================
+模型转换 
+==================
 
-The main docs of JeVois provides instructions and examples on how to convert models for the various accelerators
-available for \jvpro:
+JeVois 的主要文档提供了有关如何为 \jvpro 可用的各种加速器转换模型的说明和示例：
 
 - \ref UserDNNoverview
 - \ref UserDNNopencv
@@ -14,77 +13,46 @@ available for \jvpro:
 - \ref UserDNNtpu
 - \ref UserDNNvpu
 
-Writing custom preproc/network/postproc in Python
-=================================================
+在 Python 中编写自定义 preproc/network/postproc 
+=====================================================
 
-The JeVois framework already has post-processors for Classification, YOLO, SSD, YuNet, etc but you may need your own
-custom pre-processor if you are importing a different kind of network. The easiest is to implement it in Python, since
-usually a network creator will also provide Python code to do the post-processing.
+JeVois 框架已经具有用于分类、YOLO、SSD、YuNet 等的后处理器，但如果您要导入不同类型的网络，则可能需要自己的自定义预处理器。最简单的方法是用 Python 实现它，因为网络创建者通常还会提供 Python 代码来进行后处理。
 
-Have a look at the following examples:
+看看下面的例子：
 
-- Sample pre-processor: [PyPreBlob.py](https://github.com/jevois/jevoisbase/blob/master/share-jevoispro/pydnn/pre/PyPreBlob.py)
+- 示例预处理器：[PyPreBlob.py](https://github.com/jevois/jevoisbase/blob/master/share-jevoispro/pydnn/pre/PyPreBlob.py)
 
-- Sample network inference using OpenCV: [PyNetOpenCV.py](https://github.com/jevois/jevoisbase/blob/master/share-jevoispro/pydnn/net/PyNetOpenCV.py)
+- 使用 OpenCV 的示例网络推理：[PyNetOpenCV.py](https://github.com/jevois/jevoisbase/blob/master/share-jevoispro/pydnn/net/PyNetOpenCV.py)
 
-- Sample classification post-processor: [PyPostClassify.py](https://github.com/jevois/jevoisbase/blob/master/share-jevoispro/pydnn/post/PyPostClassify.py)
+- 示例分类后处理器：[PyPostClassify.py](https://github.com/jevois/jevoisbase/blob/master/share-jevoispro/pydnn/post/PyPostClassify.py)
 
-- How to load those when specifying a model zoo entry: Look at the "Python version of SqueezeNet 1.1" in
-  [opencv.yml](https://github.com/jevois/jevoisbase/blob/master/share-jevoispro/dnn/opencv.yml)
-  + To use a python preproc: set \b preproc to Python and then \b pypre to your python code
-  + To use a python network: set \b nettype to Python and then \b pynet to your python code
-  + To use a python postproc: set \b postproc to Python and then \b pypost to your python code
+- 指定 model zoo 条目时如何加载这些内容：查看 [opencv.yml](https://github.com/jevois/jevoisbase/blob/master/share-jevoispro/dnn/opencv.yml) 中的 "Python version of SqueezeNet 1.1"
+  + 要使用 Python 预处理程序：将 \b preproc 设置为 Python，然后将 \b pypre 设置为您的 Python 代码
+  + 要使用 Python 网络：将 \b nettype 设置为 Python，然后将 \b pynet 设置为您的 Python 代码
+  + 要使用 Python 后处理程序：将 \b postproc 设置为 Python，然后将 \b pypost 设置为您的 Python 代码
 
-\note Async processing (where the network runs in a separate thread) is not possible if network type is Python and
-preproc or postproc are Python too, as the Python interpreter is not re-entrant. Usually, the C++ pre-processor and
-network should work for most models, and you would typically only want a custom Python post-processor. The network can
-then run in a parallel thread without issues since it is running from C++.
+\note 如果网络类型为 Python，并且 preproc 或 postproc 也是 Python，则无法进行异步处理（网络在单独的线程中运行），因为 Python 解释器不可重入。通常，C++ 预处理器和网络应该适用于大多数模型，并且您通常只需要自定义 Python 后处理器。然后，由于网络是从 C++ 运行的，因此它可以在并行线程中运行而不会出现问题。
 
-More details about custom post-processing
+有关自定义后处理的更多详细信息 
 -----------------------------------------
 
-The general post-processor definition in JeVois is in the [PostProcessor C++ virtual base
-class](https://github.com/jevois/jevois/blob/master/include/jevois/DNN/PostProcessor.H). You basically need to implement
-the functions marked pure virtual (`= 0`) in there:
+JeVois 中的通用后处理器定义位于 [PostProcessor C++ 虚拟基类](https://github.com/jevois/jevois/blob/master/include/jevois/DNN/PostProcessor.H) 中。您基本上需要在其中实现标记为纯虚（`= 0`）函数：
 
-- `freeze(bool doit)`: called by the JeVois core to freeze or unfreeze JeVois parameters of your module that users
-  should not be allowed to change at runtime. In the implementation, you would typically simply call `freeze(doit)` on
-  those parameters that should be frozen at runtime, and skip those that users can play with at runtime.
+- `freeze(bool doit)`：由 JeVois 核心调用，用于冻结或解冻模块的 JeVois 参数，这些参数不应允许用户在运行时更改。在实现中，您通常只需对那些应该在运行时冻结的参数调用 `freeze(doit)`，并跳过那些用户可以在运行时使用的参数。
 
-- `process(std::vector<cv::Mat> const & outs, PreProcessor * preproc)`: Called by the JeVois core with a list of arrays
-  that contain the outputs received from your network, usually dequantized to float32. Here you should parse these and
-  store decoded results for later use in `report()`. The given \b preproc may be used to help with scaling coordinates
-  from blob that was passed as input to the network back to the original image that was captured by the camera.
+- `process(std::vector<cv::Mat> const & outs, PreProcessor * preproc)`：由 JeVois 核心调用，使用包含从网络接收的输出的数组列表，通常反量化为 float32。在这里，您应该解析这些并存储解码的结果以供以后在 `report()` 中使用。给定的 \b preproc 可用于帮助将作为输入传递给网络的 blob 的坐标缩放回相机捕获的原始图像。
 
-- `report(jevois::StdModule * mod, jevois::RawImage * outimg, jevois::OptGUIhelper * helper, bool overlay, bool idle)`:
-  report the parsed results obtained during the last call to process(), for example by drawing boxes or writing some
-  text messages. If you get a non-null \b helper, the you should draw outputs using OpenGL-enabled functions provided to
-  you by the helper. If you get a non-null outimg, users are using your module in \a Legacy mode with streaming video
-  over USB, and you need to draw outputs into that image, using jevois::RawImage drawing functions. For JeVois-Pro, you
-  can skip that legacy mode as most people want to the the new GUI/OpenGL mode.
+- `report(jevois::StdModule * mod, jevois::RawImage * outimg, jevois::OptGUIhelper * helper, bool overlay, bool idle)`：报告上次调用 process() 时获得的解析结果，例如通过绘制框或编写一些文本消息。如果您获得非空的 \b helper ，则应使用帮助程序提供给您的支持 OpenGL 的函数绘制输出。如果您获得非空的 outimg，则用户正在使用您的模块在 \a Legacy 模式下通过 USB 传输流式视频，您需要使用 jevois::RawImage 绘制函数将输出绘制到该图像中。对于 JeVois-Pro，您可以跳过该传统模式，因为大多数人都希望使用新的 GUI/OpenGL 模式。
 
-`process()` and `report()` are separate because they may be called at different rates: report() must be called on every
-frame for the GUI and displays to be drawn. But process() will only be called each time your network has finished
-processing an input. If your network only runs inference at 5 fps, then process() will be called at 5 fps bur report()
-at 30 fps.
+`process()` 和 `report()` 是分开的，因为它们可能以不同的速率调用：report() 必须在每一帧上调用，以便绘制 GUI 和显示。但 process() 只会在每次网络完成输入处理时调用。如果您的网络仅以 5 fps 运行推理，则 process() 将以 5 fps 调用，而 report() 则以 30 fps 调用。
 
-\note You should be ready for report() to be called even before process() has been called. This is often the case if a
-network is slow to load or initialize, we do not want to block the display and GUI, so we will still call report() at 30
-fps while we wait for the network. Thus, you should initialize the things that you will report to sensible defaults in
-your constructor.
+\note 您应该在调用 process() 之前就准备好调用 report()。如果网络加载或初始化速度较慢，通常就会出现这种情况，我们不想阻塞显示和 GUI，因此在等待网络时我们仍会以 30 fps 的速度调用 report()。因此，您应该在构造函数中将要报告的内容初始化为合理的默认值。
 
-Now you should be able to understand what is going on in
-[PyPostClassify.py](https://github.com/jevois/jevoisbase/blob/master/share-jevoispro/pydnn/post/PyPostClassify.py)
+现在你应该能够理解 [PyPostClassify.py](https://github.com/jevois/jevoisbase/blob/master/share-jevoispro/pydnn/post/PyPostClassify.py) 中发生了什么
 
-In some post-processors you may want to draw boxes, circles, overlays, etc. Look at [class GUIhelperPython in
-PythonModule.H](https://github.com/jevois/jevois/blob/master/include/jevois/Core/PythonModule.H) to get the signatures
-of available functions GUIhelper::i2d(), GUIhelper::drawLine(), GUIhelper::drawRect(), GUIhelper::drawPoly(),
-GUIhelper::drawCircle(), GUIhelper::itext(), GUIhelper::d2i(), etc.
+在某些后处理器中，您可能需要绘制框、圆圈、覆盖图等。查看 [PythonModule.H 中的 GUIhelperPython 类](https://github.com/jevois/jevois/blob/master/include/jevois/Core/PythonModule.H) 以获取可用函数 GUIhelper::i2d()、GUIhelper::drawLine()、GUIhelper::drawRect()、GUIhelper::drawPoly()、GUIhelper::drawCircle()、GUIhelper::itext()、GUIhelper::d2i() 等的签名。
 
-Note that these functions inherit some global parameters from the GUI. For example, when you draw filled rectangles or
-circles, the transparency of the fill or the thickness of the outline are not under your control, but are under user
-control through parameters \p fillalpha, \p linethick, etc of the GUI (to see these, switch to the \b Parameters tab of
-the GUI, enable <b>Show System Parameters</b> at top right, and look under <b>Graphical interface options</b>).
+请注意，这些函数从 GUI 继承了一些全局参数。例如，当您绘制填充的矩形或圆形时，填充的透明度或轮廓的粗细不受您的控制，而由用户通过 GUI 的参数 \p fillalpha、\p linethick 等进行控制（要查看这些参数，请切换到 GUI 的 \b Parameters 选项卡，启用右上角的 <b>Show System Parameters</b>，然后查看 <b>Graphical interface options</b> ）。
 
 */
 

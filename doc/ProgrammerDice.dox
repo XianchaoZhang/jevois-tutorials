@@ -1,50 +1,44 @@
-/*! \page ProgrammerDice A JeVois dice counting module in C++
+/*! \page ProgrammerDice C++ 中的 JeVois 骰子计数模块
 
-Here we develop a simple C++ OpenCV vision module that counts the total number of pips on some dice presented to
-JeVois. This application scenario was suggested by JeVois user mapembert at the [JeVois Tech Zone](http://jevois.org/qa)
-in this post:
+这里我们开发了一个简单的 C++ OpenCV 视觉模块，用于计算 JeVois 收到的骰子上的总点数。此应用场景由 JeVois 用户 mapembert 在 [JeVois Tech Zone](http://jevois.org/qa) 的这篇文章中提出：
 
 http://jevois.org/qa/index.php?qa=328
 
-In this tutorial, you will learn:
+在本教程中，您将学习：
 
-- how to create a new C++ machine vision module for JeVois from scratch
-- how to implement the dice counting algorithm in Python
-- how to install the new module to live microSD
+- 如何从头开始为 JeVois 创建新的 C++ 机器视觉模块
+- 如何用 Python 实现骰子计数算法
+- 如何将新模块安装到实时 microSD 中
 
-This tutorial assumes \jvversion{1.3} or later.
+本教程假设使用 \jvversion{1.3} 或更高版本。
 
-Because we need to cross-compile C++ code for execution on the JeVois processor, this tutorial is for Linux only.
+因为我们需要交叉编译 C++ 代码以便在 JeVois 处理器上执行，所以本教程仅适用于 Linux。
 
-See \ref ProgrammerPythonDice for an implementation of this algorithm in Python + OpenCV (Linux, Windows, or Mac host).
+请参阅 \ref ProgrammerPythonDice 了解该算法在 Python + OpenCV（Linux、Windows 或 Mac 主机）中的实现。
 
-Preliminaries
+准备工作 
 -------------
 
-- Review \ref ProgrammerSetup so that you are comfortable with:
-  + Flashing the latest microSD image to a physical card
-  + Connecting JeVois to a host computer and powering it up
-  + Grabbing video from JeVois and selecting different resolutions
-  + Communicating with JeVois using a serial-over-USB link, and using the JeVois command-line interface
-  + Exporting the microSD inside JeVois to your host computer
+- 查看 \ref ProgrammerSetup ，以便您熟悉：
+  + 将最新的 microSD 映像刷入物理卡
+  + 将 JeVois 连接到主机并启动它
+  + 从 JeVois 抓取视频并选择不同的分辨率
+  + 使用串行 USB 链接与 JeVois 通信，并使用 JeVois 命令行界面
+  + 将 JeVois 内的 microSD 导出到您的主机
 
-Setting up a new C++ module
+设置新的 C++ 模块 
 ------------------------------
 
-The easiest to get started is to grab a copy of the \b samplemodule in the JeVois github
-https://github.com/jevois/samplemodule and to modify it.
+最简单的入门方法是获取 JeVois github https://github.com/jevois/samplemodule 中的 \b samplemodule 的副本并对其进行修改。
 
-If you have installed the \b jevois-sdk and followed the instructions in \ref ProgrammerSetup, you should use the script
-`jevois-create-module` which will grab that sample code from GitHub, and will also immediately change names of classes
-and files to match our new module's name: usage is `jevois-create-module <VendorName> <ModuleName>`, so here let us just
-run:
+如果您已经安装了 \b jevois-sdk 并按照 \ref ProgrammerSetup 中的说明进行操作，则应该使用脚本 `jevois-create-module`，它将从 GitHub 获取示例代码，并且还会立即更改类和文件的名称以匹配我们新模块的名称：用法是 `jevois-create-module <VendorName> <ModuleName>`，所以这里我们只需运行：
 
 \verbatim
 cd
 jevois-create-module Tutorial DiceCounter
 \endverbatim
 
-you should now have the following:
+您现在应该有以下内容：
 \verbatim
 dicecounter
 ├── CMakeLists.txt
@@ -62,12 +56,10 @@ dicecounter
             └── screenshot1.png
 \endverbatim
 
-The algorithm
+算法
 -------------
 
-The author of the original module mentioned in the above post, Yohann Payet, sent us his code, which is written in C++
-and as follows (this is standalone code not intended for operation on JeVois; in this tutorial we will convert adapt it
-for use in JeVois):
+上述文章中提到的原始模块的作者 Yohann Payet 向我们发送了他的代码，该代码用 C++ 编写，如下所示（这是独立代码，不适用于 JeVois；在本教程中，我们将对其进行转换以适应 JeVois）：
 
 \code
 // Created by Yohann Payet (mechanical/embedded systems engineer)
@@ -156,49 +148,40 @@ int main() {
 }
 \endcode
 
-Our tasks now are:
 
-- Use the JeVois input frames as opposed to an OpenCV video capture object
-- Send result images to the host computer over USB using the JeVois framework as opposed to displaying them using OpenCV
-  HighGUI
+我们现在的任务是：
 
-Deciding on capture and output resolutions
+- 使用 JeVois 输入帧而不是 OpenCV 视频捕获对象
+- 使用 JeVois 框架通过 USB 将结果图像发送到主机，而不是使用 OpenCV HighGUI 显示它们
+
+决定捕获和输出分辨率 
 ------------------------------------------
 
-This algorithm was written for 640x480 resolution. Let us use that in our module as well. We edit
-<b>~/dicecounter/src/Modules/DiceCounter/postinstall</b> as follows:
+此算法是为 640x480 分辨率编写的。让我们也将其用于我们的模块中。我们编辑 <b>~/dicecounter/src/Modules/DiceCounter/postinstall</b> 如下：
 
 \verbatim
 jevois-add-videomapping YUYV 640 480 17 YUYV 640 480 17 Tutorial DiceCounter
 \endverbatim
 
-The \b postinstall script will be run by the JeVois camera after we install our new module to microSD. The video mapping
-required by our module and defined in \b postinstall will then be added to the main \b videomappings.cfg file on the
-microSD. Note that \b postinstall applies to the platform hardware only. To add the videomapping to your host
-configuration, just run the above command on your host computer (using sudo).
+在我们将新模块安装到 microSD 后，JeVois 相机将运行 \b postinstall 脚本。我们的模块所需的视频映射（在 \b postinstall 中定义）将添加到 microSD 上的主 \b videomappings.cfg 文件中。请注意，\b postinstall 仅适用于平台硬件。要将视频映射添加到主机配置，只需在主机上运行上述命令（使用 sudo）。
 
-Note how here we have chosen 17 frames/s as our initial guess for framerate. Because 640x480 is a popular resolution,
-this will also allow us to avoid clashes with other modules that use this same resolution but rates of 30 frames/s or
-others. We will adjust this rate later once we know how fast this algorithm runs on JeVois.
+请注意，我们在这里选择 17 帧/秒作为帧速率的初始猜测。由于 640x480 是一种流行的分辨率，这也将使我们能够避免与使用相同分辨率但速率为 30 帧/秒或其他的其他模块发生冲突。一旦我们知道该算法在 JeVois 上运行的速度有多快，我们稍后就会调整此速率。
 
-Initial import to live microSD
+首次导入至实时 microSD 
 ------------------------------
 
-The JeVois \b samplemodule runs fine out of the box and thus our module should run as well if we have not
-introduced any mistakes.
+JeVois \b samplemodule 开箱即用，因此如果我们没有引入任何错误，我们的模块也应该可以运行。
 
-Compiling and installing the module to live microSD inside a connected JeVois camera has been automated through CMake,
-just connect JeVois and let it boot, then type:
+通过 CMake 自动编译并安装模块到连接的 JeVois 相机内的实时 microSD，只需连接 JeVois 并让其启动，然后输入：
 
 \verbatim
 cd ~/dicecounter
 ./rebuild-platform.sh --live
 \endverbatim
 
-Which will instruct JeVois to export its microSD as a virtual flash drive to the host computer, will copy the required
-files, and will eject the drive to reboot JeVois. The module will be ready for use once JeVois has restarted.
+这将指示 JeVois 将其 microSD 作为虚拟闪存驱动器导出到主机，复制所需文件，然后弹出驱动器以重新启动 JeVois。一旦 JeVois 重新启动，该模块即可使用。
 
-You should see an output like this:
+你应该看到如下输出：
 
 \verbatim
 itti@iLab1:~/dicecounter$ ./rebuild-platform.sh --live
@@ -252,26 +235,25 @@ JeVois smart camera virtual USB ready at /media/itti/JEVOIS
 JeVois smart camera virtual USB disk ejected -- rebooting JeVois
 \endverbatim
 
-Trying out the initial sample module
+尝试初始示例模块 
 ------------------------------------
 
-Fire up your video capture software and set it to 640x480 @@ 17fps. You should see the sample python module running, but
-under our new name:
+启动视频捕捉软件，将其设置为 640x480 @@ 17fps。您应该看到示例 Python 模块正在运行，但使用的是我们的新名称：
 
 \image html cdice1.png
 
-Implementing the module
+实现模块 
 -----------------------
 
-Let us just edit \b DiceCounter.C to use the code above. The main changes are:
+我们只需编辑 \b DiceCounter.C 即可使用上述代码。主要变化如下：
 
-- We will get a jevois::RawImage as input with YUYv format
-- In two parallel threads, we will:
-  + Copy the full input image to the USB output buffer, to show it to users
-  + Convert it to grayscale and process it to detect the dice pips
-- We will finally draw the detected pips into the output image, and send it over USB.
+- 我们将获得一个 YUYv 格式的 jevois::RawImage 作为输入
+- 在两个并行线程中，我们将：
+  + 将完整的输入图像复制到 USB 输出缓冲区，以显示给用户
+  + 将其转换为灰度并对其进行处理以检测骰子点数
+- 我们最终将检测到的点数绘制到输出图像中，并通过 USB 发送。
 
-Here is the resulting code:
+结果代码如下：
 
 \code
 //! Counting dice pips
@@ -396,38 +378,29 @@ JEVOIS_REGISTER_MODULE(DiceCounter);
 \endcode
 
 
-Result
-------
 
-You should see something like this:
+结果  -  -  - 
+
+你应该看到类似这样的内容：
 
 \image html cdice2.png
 
-Note that this algorithm runs a bit slow on JeVois, about 8 frames/s. One could adjust the videomapping accordingly.
+请注意，此算法在 JeVois 上运行速度有点慢，大约每秒 8 帧。可以相应地调整视频映射。
 
-Interestingly, it runs at about the same speed with this implementation as the Python implementation developed in \ref
-ProgrammerPythonDice, although we had hypothesized in that Python tutorial that we might be able to make the C++ code
-run faster! Here is the reason: Image conversion from YUYV to BGR and to grayscale (in `img = inframe.getCvBGR()` and
-`grayImage = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)` of the python code, and from BGR to YUYV in
-`outframe.sendCvBGR(im_with_keypoints)` is not counted as processing time in the Python module, but all conversions are
-counted by the timer of the C++ implementation. So the C++ algorithm including all conversions runs about as fast as
-just the core of the Python implementation not including any conversion. In any case, it looks like the JeVois and the
-OpenCV Python bindings are indeed quite efficient!
+有趣的是，此实现的运行速度与 \ref ProgrammerPythonDice 中开发的 Python 实现的速度大致相同，尽管我们在该 Python 教程中假设我们可能能够让 C++ 代码运行得更快！原因如下：在 Python 代码中，从 YUYV 到 BGR 和到灰度（在 `img = inframe.getCvBGR()` 和 `grayImage = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)` 的图像转换，以及在 `outframe.sendCvBGR(im_with_keypoints)` 中从 BGR 到 YUYV 的图像转换不计入 Python 模块中的处理时间，但所有转换都由 C++ 实现的计时器计算。因此，包括所有转换在内的 C++ 算法的运行速度与不包括任何转换的 Python 实现的核心一样快。无论如何，看起来 JeVois 和 OpenCV Python 绑定确实非常高效！
 
-Given that anyone is unlikely to be needing any kind of fast frame rate for this application (since dice will not get
-thrown too often), here no further optimization is necessary. The low frame rate will allow the camera sensor to perform
-well even in low light conditions.
+鉴于任何人都不太可能需要此应用程序的任何快速帧速率（因为掷骰子的频率并不高），因此这里无需进一步优化。低帧速率将使相机传感器即使在低光照条件下也能表现良好。
 
-Packing the module
+包装模块
 ------------------
 
-To create a nice packaged module that you can send to your friends, just type:
+要创建一个可以发送给朋友的精美打包模块，只需输入：
 
 \verbatim
 ./rebuild-platform.sh
 \endverbatim
 
-Which installs instead to a directory \b jvpkg in your module:
+它将安装到模块中的目录 \b jvpkg 中：
 
 \verbatim
 Install the project...
@@ -440,23 +413,21 @@ Install the project...
 -- Removed runtime path from "/lab/itti/dicecounter/jvpkg/modules/Tutorial/DiceCounter/DiceCounter.so"
 \endverbatim
 
-You would then finally type:
+最后你输入：
 
 \verbatim
 cd pbuild
 make jvpkg
 \endverbatim
 
-which creates <b>~/dicecounter/Tutorial_dicecounter.jvpkg</b>
+这将创建 <b>~/dicecounter/Tutorial_dicecounter.jvpkg</b>
 
-You can send that file to your friends, and tell them to copy it to <b>JEVOIS:/packages/</b> on their microSD. Next time
-JeVois restarts, it will unpack, install, configure, and delete the package, and the new module will be ready for use.
+您可以将该文件发送给您的朋友，并告诉他们将其复制到 microSD 上的 <b>JEVOIS:/packages/</b>。下次 JeVois 重新启动时，它将解压、安装、配置和删除该软件包，然后新模块即可使用。
 
-Final note
+最后说明 
 ----------
 
-This module has now been integrated into \b jevoisbase, as the \jvmod{DiceCounter} module with output resolution 640x480
-@@ 7.5 fps.
+该模块现已集成到 \b jevoisbase 中，作为 \jvmod{DiceCounter} 模块，输出分辨率为 640x480 @@ 7.5 fps。
 
 */
 

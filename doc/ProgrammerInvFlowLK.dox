@@ -1,47 +1,42 @@
-/*! \page ProgrammerInvFlowLK Computing Optical Flow to detect moving objects or moving camera
+/*! \page ProgrammerInvFlowLK 计算光流来检测移动物体或移动相机
 
-This tutorial implements a simple optical flow algorithm based on tracking interest points from one video frame to the
-next. This can be used either to detect moving objects in video when the camera is stationary, or to detect when the
-camera itself is moving.
+本教程实现了一个简单的光流算法，该算法基于从一个视频帧到下一个视频帧跟踪兴趣点。这既可用于在摄像机静止时检测视频中的移动物体，也可用于检测摄像机本身何时移动。
 
-This tutorial also aims at demonstrating how one can easily port other Python OpenCV tutorials to JeVois.
+本教程还旨在演示如何轻松地将其他 Python OpenCV 教程移植到 JeVois。
 
-\image html flowlk0.jpg Example of tracked interest points over a movie sequence. Image from OpenCV documentation (see link below).
+\image html flowlk0.jpg 电影序列中兴趣点追踪示例。图片来自 OpenCV 文档（见下方链接）。
 
-Approach
---------
+方法
+-------- 
 
-- We start with https://docs.opencv.org/4.0.0-alpha/d7/d8b/tutorial_py_lucas_kanade.html
+- 我们从 https://docs.opencv.org/4.0.0-alpha/d7/d8b/tutorial_py_lucas_kanade.html 开始
 
-- We will port the code developed in that tutorial to JeVois
+- 我们将在该教程中开发的代码移植到 JeVois
 
-- We will modify it a little to detect when all tracked points have run out of the field of view, in which
-case we will detect a new set of interest points and track those.
+- 我们将对其进行少许修改，以检测所有跟踪点何时超出视野范围，在这种情况下，我们将检测一组新的兴趣点并对其进行跟踪。
 
-Creating the module
+创建模块
 -------------------
 
-- Select <b>New Python Module...</b> from the pull-down menu of JeVois Inventor (or press `CTRL-N`).
+- 从 JeVois Inventor 的下拉菜单中选择<b>新建 Python 模块...</b>（或按 `CTRL-N`）。
 
-- Fill in the details as shown below:
+- 填写如下所示的详细信息：
   
-  \jvimg{flowlk1.png, 30%}
-  
-- Allow JeVois to restart, select your new module from the <b>Vision Module</b> pull-down menu, and switch to the
-  <b>Code</b> tab of the Inventor.
+  \jvimg{flowlk1.png, 30%} 
+- 允许 JeVois 重新启动，从 <b>Vision Module</b> 下拉菜单中选择您的新模块，然后切换到 Inventor 的 <b>Code</b> 选项卡。
 
-Analyzing the original code
+分析原始代码 
 ---------------------------
 
-We start by reading the tutorial at https://docs.opencv.org/4.0.0-alpha/d7/d8b/tutorial_py_lucas_kanade.html
+我们首先阅读 https://docs.opencv.org/4.0.0-alpha/d7/d8b/tutorial_py_lucas_kanade.html 上的教程
 
-Here is the first piece of code from that tutorial:
+以下是该教程的第一段代码：
 
 \code{.py}
 import numpy as np
 import cv2 as cv
 cap = cv.VideoCapture('slow.flv')
-# params for ShiTomasi corner detection
+# ShiTomasi 角点检测的参数
 feature_params = dict( maxCorners = 100,
                        qualityLevel = 0.3,
                        minDistance = 7,
@@ -52,11 +47,11 @@ lk_params = dict( winSize  = (15,15),
                   criteria = (cv.TERM_CRITERIA_EPS | cv.TERM_CRITERIA_COUNT, 10, 0.03))
 # Create some random colors
 color = np.random.randint(0,255,(100,3))
-# Take first frame and find corners in it
+# 取第一帧并在其中找到角点
 ret, old_frame = cap.read()
 old_gray = cv.cvtColor(old_frame, cv.COLOR_BGR2GRAY)
 p0 = cv.goodFeaturesToTrack(old_gray, mask = None, **feature_params)
-# Create a mask image for drawing purposes
+# 创建一个用于绘制的掩码图像
 mask = np.zeros_like(old_frame)
 while(1):
     ret,frame = cap.read()
@@ -77,58 +72,37 @@ while(1):
     k = cv.waitKey(30) & 0xff
     if k == 27:
         break
-    # Now update the previous frame and previous points
+    # 现在更新前一帧和前一个点
     old_gray = frame_gray.copy()
     p0 = good_new.reshape(-1,1,2)
 cv.destroyAllWindows()
 cap.release()
 \endcode
 
-To port the code to JeVois, we need to address the following:
+要将代码移植到 JeVois，我们需要解决以下问题：
 
-- Our JeVois module is a Python class, with class member functions, such as `process()` called on every frame. This
-  means that:
-  
-  + the JeVois engine runs the main loop of grabbing images, sending them to processing (our module), and sending the
-    results to the host computer over USB. Hence, we will delete any code related to:
-    - running a main loop, as in `while(1)` in the original code;
-    - grabbing images, as in `cap.read()`; we will replace that by a `get()` on the inframe passed to
-      `process()`;
-    - and display or user interaction, as in `cv.imshow()`, `cv.waitKey()`, etc; instead we will just at the
-      end of `process()` run a `send()` for the final result image.
-    - For more details, see \ref Concepts and \ref ModulePythonTutorial
-    
-  + Instead of global variables (or variables created outside the main loop), we will use class member variables (with
-    name like <b>self.var</b>). We initialize these in the constructor of our module: member function `__init__(self)`.
+- 我们的 JeVois 模块是一个 Python 类，具有类成员函数，例如在每一帧上调用 `process()`。这意味着：
+  + JeVois 引擎运行抓取图像的主循环，将它们发送到处理（我们的模块），并通过 USB 将结果发送到主机。因此，我们将删除与以下内容相关的任何代码：
+    - 运行主循环，如原始代码中的 `while(1)`；
+    - 抓取图像，如 `cap.read()`；我们将用传递给 `process()` 的内框上的 `get()` 替换它；
+    - 以及显示或用户交互，如 `cv.imshow()`、`cv.waitKey()` 等；相反，我们将在 `process()` 的末尾运行 `send()` 以获取最终结果图像。
+    - 有关更多详细信息，请参阅 \ref Concepts 和 \ref ModulePythonTutorial 
+  + 我们将使用类成员变量（名称类似于 <b>self.var</b>），而不是全局变量（或在主循环之外创建的变量）。我们在模块的构造函数中初始化这些变量：成员函数 `__init__(self)`。
 
-- Looking at the original code, there are two phases in this algorithm:
-  
-  + Once when the program starts, grab a video frame and detect some interest points using `goodFeaturesToTrack()`,
-    which finds a number of fairly unique-looking points that we hope can be seen again on the next video frame, even
-    though the camera or the objects might have moved a little.
-  
-  + Then, on every subsequent frame, those points are tracked using `calcOpticalFlowPyrLK()`. The resulting set of
-    points (which possibly have moved a bit) replaces the old set of points, so that the new set can be tracked on the
-    next video frame.
+- 查看原始代码，此算法有两个阶段：
+  + 程序启动后，抓取视频帧并使用 `goodFeaturesToTrack()` 检测一些兴趣点，这会找到一些看起来相当独特的点，我们希望这些点可以在下一个视频帧中再次看到，即使相机或物体可能移动了一点。
+  + 然后，在每个后续帧上，使用 `calcOpticalFlowPyrLK()` 跟踪这些点。生成的点集（可能移动了一点）将替换旧的点集，以便可以在下一个视频帧上跟踪新的点集。
 
-  JeVois does not allow one to just grab a frame during initialization. The only time we get to process frames is when
-  the module's `process()` function is called. So we will instead decide on what to do (extract good features to track,
-  or track them) inside `process()`, based on whether a member variable <b>self.old_gray</b> exists or not:
-  
-  + On the first frame (first call to `process()`), it does not exist and we then find the good features to track and
-    also create <b>self.old_gray</b>;
+  JeVois 不允许在初始化期间抓取帧。我们唯一可以处理帧的时间是调用模块的 `process()` 函数时。因此，我们将根据成员变量 <b>self.old_gray</b> 是否存在来决定在 `process()` 中做什么（提取要跟踪的好特征，或跟踪它们）：
+  + 在第一帧（第一次调用 `process()`）上，它不存在，然后我们找到要跟踪的好特征并创建 <b>self.old_gray</b>；
 
-  + On subsequent frames, <b>self.old_gray</b> exists and we use that as a cue to now track the detected points.
+  + 在后续帧中，<b>self.old_gray</b> 存在，我们使用它作为提示来跟踪检测到的点。
 
-- A small detail: in this example the authors imported cv2 as cv (i.e., they use prefix `cv.` for OpenCV functions)
-  while we usually just import cv2 (and use prefix `cv2.`).
+- 一个小细节：在这个例子中，作者将 cv2 导入为 cv（即，他们对 OpenCV 函数使用前缀 `cv.`），而我们通常只导入 cv2（并使用前缀 `cv2.`）。
 
-- One last small detail is that variable <b>p1</b> would become `NoneType` when all the tracked points have disappeared
-  from the field of view. This gave rise to an exception when trying to subindex \b p1 in the line `good_new =
-  p1[st==1]`; hence, in our module, we add a test `if p1 is None:` in which we just delete <b>self.old_gray</b>, which
-  will trigger finding new good points to track on the next call to `process()`.
+- 最后一个细节是，当所有跟踪点都从视野中消失时，变量 <b>p1</b> 将变为 `NoneType`。这在尝试对行 `good_new = p1[st==1]` 中的 \b p1 进行子索引时引发异常；因此，在我们的模块中，我们添加了一个测试 `if p1 is None:`，其中我们只是删除 <b>self.old_gray</b>，这将触发在下次调用 `process()` 时查找要跟踪的新好点。
 
-Writing the JeVois code
+编写 JeVois 代码 
 -----------------------
 
 \code{.py}
@@ -136,9 +110,9 @@ import libjevois as jevois
 import cv2
 import numpy as np
 
-## Optical Flow using Lucas-Kanade
+## 使用 Lucas-Kanade 的光流
 #
-# Add some description of your module here.
+# 在此处添加一些模块描述。
 #
 # @author Laurent Itti
 # 
@@ -217,20 +191,21 @@ class FlowLK:
 
 \endcode
 
-And here we go!
+现在我们开始！
 
 \jvimg{flowlk2.png, 70%}
 
-Quite fast actually, 80 to 140 frames/s depending on how many points get tracked.
+实际上相当快，80 到 140 帧/秒，取决于跟踪的点数。
 
 \jvimg{flowlk3.png, 70%}
 
 
-Going further
+进一步 
 -------------
 
-- Try the dense optical flow computation which is in the second part of the OpenCV tutorial studied here.
+- 尝试此处研究的 OpenCV 教程第二部分中的密集光流计算。
 
-- Try to port other OpenCV tutorials to JeVois.
+- 尝试将其他 OpenCV 教程移植到 JeVois。
 
 */
+

@@ -1,102 +1,85 @@
-/*! \page ProgrammerSetup Setting up for programming JeVois
+/*! \page ProgrammerSetup 设置 JeVois 编程
 
 
-This tutorial will help you get setup for programming JeVois.
+本教程将帮助您完成 JeVois 编程的设置。
 
-If all you want to do is use existing bundled machine vision algorithms, and possibly develop new modules in Python
-only, then simply get and flash a microSD image from http://jevois.org/start and check out:
+如果您想要做的只是使用现有的捆绑机器视觉算法，并且可能只用 Python 开发新模块，那么只需从 http://jevois.org/start 获取并刷新 microSD 映像并检查：
 
 - \ref UserGettingStarted
 - \ref ProgrammerPythonLive
 
-The programming environment is Ubuntu 64-bit, version 20.04 (focal) or
-18.04 (bionic). Support for 16.04 LTS (xenial) has ended as of
-\jvversion{1.12.0} as it is becoming increasingly difficult to compile
-recent code (e.g., OpenCV 4.0.1) on this older Ubuntu release.
+编程环境是 Ubuntu 64 位，版本 20.04（focal）或 18.04（bionic）。自 \jvversion{1.12.0} 起，对 16.04 LTS（xenial）的支持已终止，因为在此旧版 Ubuntu 上编译最新代码（例如 OpenCV 4.0.1）变得越来越困难。
 
-As of \jvversion{1.15.0} the official JeVois development platform is Ubuntu 20.04 (focal).
+从 \jvversion{1.15.0} 开始，官方 JeVois 开发平台是 Ubuntu 20.04 (focal)。
 
-As of \jvversion{1.21.0} the official JeVois development platform is Ubuntu 24.04 (noble).
+从 \jvversion{1.21.0} 开始，官方 JeVois 开发平台是 Ubuntu 24.04 (noble)。
 
-It is generally ok to setup the programming environment in a virtual machine (e.g., VirtualBox). Just beware that you
-may have to resolve issues having to do with granting proper access to either the video camera or the microSD card to
-the virtual machine. See \ref Virtualbox and \ref ProgrammerVbox for more info.
+通常，在虚拟机（例如 VirtualBox）中设置编程环境是可以的。但请注意，您可能需要解决与向虚拟机授予对摄像机或 microSD 卡的正确访问权限有关的问题。有关更多信息，请参阅 \ref Virtualbox 和 \ref ProgrammerVbox 。
 
 \youtube{pgd7pW1XDU8}
 
-The video above gets you through the steps of:
+上面的视频将带你了解以下步骤：
 
-- installing Ubuntu 18.04 (bionic) on VirtualBox; steps are similar for newer Ubuntu 20.04 or 24.04.
-- installing the jevois ubuntu (.deb) packages
-- installing jevois-inventor and trying it out
-- getting the latest jevois source code from github
-- compiling that source code, both for host (your Intel computer) and platform (the ARM CPU inside JeVois)
-- flashing the freshly compiled code to microSD
+- 在 VirtualBox 上安装 Ubuntu 18.04 (bionic)；较新的 Ubuntu 20.04 或 24.04 的步骤类似。
+- 安装 jevois ubuntu (.deb) 软件包
+- 安装 jevois-inventor 并试用
+- 从 github 获取最新的 jevois 源代码
+- 编译该源代码，适用于主机（您的 Intel 计算机）和平台（JeVois 内的 ARM CPU）
+- 将新编译的代码刷入 microSD
 
-Choose your approach depending on your goals
+根据您的目标选择方法 
 --------------------------------------------
 
-Not all the steps shown in the video above may be required, depending on your goals.
+根据您的目标，可能不需要上述视频中显示的所有步骤。
 
-A quick overview of the JeVois software development packages (see \ref ProgrammerSource for more details):
+JeVois 软件开发包的快速概览（有关更多详细信息，请参阅 \ref ProgrammerSource ）：
 
-- \b jevois-opencv: OpenCV compiled for host computer with settings that match those used by the JeVois platform
-  hardware. We install this package into /usr/share/jevois-opencv-4.x.0 so that it will not interfere with any other
-  OpenCV install you might have on your host system and that might be required by some other software.
+- \b jevois-opencv： 为主机编译的 OpenCV，其设置与 JeVois 平台硬件使用的设置相匹配。我们将此包安装到 /usr/share/jevois-opencv-4.x.0 中，这样它就不会干扰您主机系统上可能安装的任何其他 OpenCV，而这些 OpenCV 可能是其他软件所需要的。
 
-- \b jevois-host: JeVois core software compiled for execution on a host computer
+- \b jevois-host： 为在主机上执行而编译的 JeVois 核心软件
 
-- \b jevois-platform: JeVois core software cross-compiled for execution on the JeVois platform hardware
+- \b jevois-platform： JeVois 核心软件交叉编译，用于在 JeVois 平台硬件上执行
 
-- \b jevoisbase-host: JeVois base modules compiled for execution on a host computer
+- \b jevoisbase-host： 为在主机上执行而编译的 JeVois 基础模块
 
-- \b jevoisbase-platform: JeVois base modules cross-compiled for execution on the JeVois platform hardware
+- \b jevoisbase-platform： JeVois 基础模块交叉编译，用于在 JeVois 平台硬件上执行
 
-- \b jevois-sdk: Compiled bootloaders, root filesystem, and other config files.
+- \b jevois-sdk： 编译的引导加载程序、根文件系统和其他配置文件。
 
-- \b jevois-sdk-dev: Compiled cross-compilers and cross-compiled libraries for the JeVois platform architecture.
+- \b jevois-sdk-dev： 为 JeVois 平台架构编译的交叉编译器和交叉编译库。
 
-Keeping that in mind:
+记住这一点：
 
-- <b>If you just want to compile a new module:</b> You do not need to re-compile \b jevois and \b jevoisbase, just use
-  the pre-compiled versions provided by the JeVois Ubuntu packages. You only need to:
-  + Install Ubuntu package \b jevois-sdk-dev
-  + Either get \b samplemodule from github as a starting point for your source code, or use script
-    `jevois-create-module` provided by \b jevois-sdk-dev to create a new module from scratch.
-  + Compile your module using `rebuild-host.sh` and `rebuild-platform.sh` scripts that are in your module's directory.
+- <b>如果您只想编译一个新模块：</b>您无需重新编译 \b jevois 和 \b jevoisbase ，只需使用 JeVois Ubuntu 软件包提供的预编译版本。您只需：
+  + 安装 Ubuntu 软件包 \b jevois-sdk-dev
+  + 从 github 获取 \b samplemodule 作为源代码的起点，或使用 \b jevois-sdk-dev 提供的脚本 `jevois-create-module` 从头开始创建一个新模块。
+  + 使用模块目录中的 `rebuild-host.sh` and `rebuild-platform.sh` 脚本编译您的模块。
 
-- <b>If you want to update to the latest jevois and jevoisbase, and possibly modify them, then make new machine
-  vision modules:</b>
-  + Follow all the steps in the above video (also further explained below), precisely and in order.
-  + Make sure you update from github and compile both \b jevois and \b jevoisbase, and in this order (first \b jevois,
-    then \b jevoisbase).
+- <b>如果您想要更新到最新的 jevois 和 jevoisbase，并可能对其进行修改，则需要制作新的机器视觉模块：</b>
+  + 严格按照上述视频中的所有步骤（下面还将进一步解释）进行操作。
+  + 确保从 github 进行更新，并按以下顺序编译 \b jevois 和 \b jevoisbase （首先是 \b jevois ，然后是 \b jevoisbase ）。
 
-- <b>If you want to hack the Linux kernel that runs on JeVois or add software to its operating system:</b>
-  + This only recommended for advanced programmers! Kernel hacking knowledge and buildroot workflow knowledge required.
-  + Use `rebuild-os.sh` in the jevois-sdk repo, which can run in a docker container.
+- <b>如果您想破解在 JeVois 上运行的 Linux 内核或向其操作系统添加软件：</b>
+  + 这仅推荐给高级程序员！需要内核破解知识和 buildroot 工作流程知识。
+  + 使用 jevois-sdk repo 中的 `rebuild-os.sh`，它可以在 docker 容器中运行。
 
 
-Upgrading the Debian packages
+升级 Debian 软件包 
 -----------------------------
 
-Skip to the next section if installing the JeVois Debian packages for the first time.
+如果第一次安装 JeVois Debian 软件包，请跳至下一部分。
 
-- When upgrading to a new version of JeVois, we recommend deleting all previous generated files and rebuilding both \b
-  /jevois for host and the staging area for platform in \b /var/lib/jevois-build and \b /var/lib/jevois-microsd as
-  follows:
-  
+- 升级到新版本的 JeVois 时，我们建议删除所有以前生成的文件，并在 \b /var/lib/jevois-build 和 \b /var/lib/jevois-microsd 中重建主机的 \b /jevois 和平台的暂存区，如下所示：
   \verbatim
 sudo apt purge jevois-sdk-dev jevois-sdk jevoisbase-platform jevoisbase-host jevois-platform jevois-host jevois-opencv
 sudo rm -rf /jevois /var/lib/jevois-build /var/lib/jevois-microsd
   \endverbatim
 
-- Then re-install as detailed below.
+- 然后按照下面详细说明重新安装。
 
-- To get out of Debian dependency hell:
+- 要摆脱 Debian 依赖地狱：
 
-  If something went wrong during a previous installation of VeVois packages (e.g., interrupted by user, power failure,
-  etc), you may have entered <em>Debian dependency hell</em>, where you cannot install packages anymore because of
-  broken dependencies or pending installs. Try this:
+  如果在之前安装 VeVois 软件包时出现问题（例如，被用户中断、电源故障等），您可能已进入 <em>Debian 依赖地狱</em>，由于依赖关系损坏或安装待处理，您无法再安装软件包。试试这个：
 
   \verbatim
 sudo apt -f install
@@ -104,30 +87,23 @@ sudo apt purge jevois-sdk-dev jevois-sdk jevoisbase-platform jevoisbase-host jev
 dpkg --remove jevois-sdk-dev jevois-sdk jevoisbase-platform jevoisbase-host jevois-platform jevois-host jevois-opencv
   \endverbatim
 
-  You should end up in a state where `dpkg --list | grep jevois` returns no hits and `sudo apt -f update` has nothing to
-  update. Then try again from the beginning.
+  最终结果应该是 `dpkg --list | grep jevois` 未返回任何结果，并且 `sudo apt -f update` 没有任何内容可更新。然后从头再试一次。
 
-Installing Debian packages the first time
+首次安装 Debian 软件包 
 -----------------------------------------
 
-- Start by checking out \ref ProgrammerSource
+- 首先查看 \ref ProgrammerSource
 
-- Unless you want to recompile the Linux kernel that runs inside JeVois (most people would not want to do that), or the
-  operating system and Unix utilities in JeVois (most people would also not want that), follow the instructions at
-  http://jevois.usc.edu and install package \b jevois-sdk-dev which will pull in all other required packages as
-  dependencies.
+- 除非您想重新编译 JeVois 中运行的 Linux 内核（大多数人不想这样做），或者 JeVois 中的操作系统和 Unix 实用程序（大多数人也不想这样做），否则请按照 http://jevois.usc.edu 上的说明安装包 \b jevois-sdk-dev ，它将把所有其他必需的包作为依赖项引入。
 
-- If you do want to recompile the kernel or the operating system, you need to install everything from source as detailed
-  in the [INSTALL file of the jevois repository](https://github.com/jevois/jevois/blob/master/INSTALL).
+- 如果您确实想要重新编译内核或操作系统，则需要从源代码安装所有内容，如 [jevois 存储库的 INSTALL 文件](https://github.com/jevois/jevois/blob/master/INSTALL) 中所述。
 
-- Now review the \ref ProgrammerOrganization to get accustomed with where the various files are.
+- 现在查看 \ref ProgrammerOrganization 以熟悉各种文件的位置。
 
-Getting the latest source code from GitHub
+从 GitHub 获取最新源代码 
 ------------------------------------------
 
-You only need to do this if you want to update to the latest version of JeVois from github. If you just want to create
-your own machine vision module, all you need is to install \b jevois-sdk-dev as explained above. The use script
-`jevois-create-module` to create a new module. See how we do it in the \ref ProgrammerHello tutorial.
+如果您想要从 github 更新到最新版本的 JeVois，则只需执行此操作。如果您只想创建自己的机器视觉模块，则只需安装 \b jevois-sdk-dev ，如上所述。使用脚本 `jevois-create-module` 创建一个新模块。请参阅 \ref ProgrammerHello 教程中我们如何操作。
 
 \verbatim
 cd
@@ -140,43 +116,37 @@ git clone https://github.com/jevois/jevois-tutorials.git
 git clone https://github.com/jevois/jevoisextra.git
 \endverbatim
 
-\note If upgrading, cd to each directory instead and run a `git pull` command to bring your copy up to date with the
-master repository.
+\note 如果升级，请 cd 到每个目录并运行 `git pull` 命令以使您的副本与主存储库保持同步。
 
-Before compiling for the first time: Getting the contributed packages
+首次编译之前：获取贡献的软件包 
 ---------------------------------------------------------------------
 
-This step is automatic as of \jvversion{1.5} and can be skipped for that version and later.
+从 \jvversion{1.5} 开始此步骤是自动的，并且可以在该版本及更高版本中跳过。
 
-The directory <b>jevoisbase/Contrib</b> is for a collection of contributed source code packages.
+目录 <b>jevoisbase/Contrib</b> 用于收集贡献的源代码包。
 
-Before you attempt to compile jevoisbase the first time, you should download and patch those contributed packages, as
-follows:
+在您第一次尝试编译 jevoisbase 之前，您应该下载并修补那些贡献的软件包，如下所示：
 
 \verbatim
 cd ~/jevoisbase/Contrib
 ./reinstall.sh
 \endverbatim
 
-Compiling JeVois, JeVoisBase, samplemodule
+编译 JeVois、JeVoisBase、samplemodule 
 ------------------------------------------
 
-- First see \ref CompilingJeVois
+- 首先参阅 \ref CompilingJeVois
 
-- Then see \ref CompilingJeVoisBase
+- 然后参见 \ref CompilingJeVoisBase
 
-- For \b samplemodule, the compilation instructions and scripts are the same as for \b jevoisbase
+- 对于 \b samplemodule ，编译说明和脚本与 \b jevoisbase 相同
 
-- Finally see \ref FlashingToSD
+- 最后参见 \ref FlashingToSD
 
-- When you are ready to write new modules from scratch, just read the whole \ref Programmer.
+- 当您准备从头开始编写新模块时，只需阅读整个 \ref Programmer 。
 
 
-\note If you recompile jevois and jevoisbase from the latest version from GitHub, then you should also flash those
-versions to microSD before you proceed with compiling and installing your own modules to microSD. Otherwise, you may end
-up with older versions of jevois and jevoisbase on your microSD (if it was installed from a microSD image from
-http://jevois.org/start) which may not work with your new module compiled against the latest version of jevois from
-GitHub. See \ref FlashingToSD for details, especially the section: Pulling the latest from github and re-flashing - full
-recompilation.
+\note 如果您从 GitHub 上的最新版本重新编译 jevois 和 jevoisbase，则您还应将这些版本刷入 microSD，然后再继续编译和安装您自己的模块到 microSD。否则，您的 microSD 上可能会出现旧版本的 jevois 和 jevoisbase（如果是从 http://jevois.org/start 上的 microSD 映像安装的），而这些旧版本可能无法与针对 GitHub 上的最新版本 jevois 编译的新模块一起使用。有关详细信息，请参阅 \ref FlashingToSD ，尤其是部分：从 github 提取最新版本并重新刷入 - 完全重新编译。
 
 */
+

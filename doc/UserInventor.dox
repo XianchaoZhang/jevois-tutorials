@@ -1,22 +1,19 @@
-/*! \page UserInventor Getting started with JeVois Inventor
+/*! \page UserInventor 开始使用 JeVois Inventor
 
 
-JeVois Inventor was created to help you get started with JeVois very quickly.
+JeVois Inventor 的创建是为了帮助您快速开始使用 JeVois。
 
-- Download and flash the latest JeVois microSD image from http://jevois.org/start/start.html (unless you have a kit that
-  includes a pre-flashed microSD card. Note that all kits that ship from jevoisinc.com will have the latest microSD
-  flashed, but our apologies if you purchased your kit from another distributor, you may need to update to at least
-  microSD image 1.8.1 to use JeVois Inventor).
+- 从 http://jevois.org/start/start.html 下载并刷新最新的 JeVois microSD 映像（除非您有一个包含预刷新 microSD 卡的套件。请注意，从 jevoisinc.com 发货的所有套件都将刷新最新的 microSD，但如果您从其他经销商处购买了套件，我们深表歉意，您可能需要至少更新到 microSD 映像 1.8.1 才能使用 JeVois Inventor）。
 
-- Download and install JeVois Inventor from http://jevois.org/start/start.html
+- 从 http://jevois.org/start/start.html 下载并安装 JeVois Inventor
 
-- Check out the quick instructions at \ref JeVoisInventor
+- 查看 \ref JeVoisInventor 的快速说明
 
-  \youtube{XVMk8lRvm8k}
+\youtube{XVMk8lRvm8k}
 
-- Download the [JeVois guided tour](http://jevois.org/data/jevois-guided-tour-latest.pdf)
+- 下载 [JeVois 导览](http://jevois.org/data/jevois-guided-tour-latest.pdf)
 
-- Flip through the guided tour, select the corresponding machine vision modules from the "Vision Module" pulldown menu
-  in JeVois Inventor, and check out what JeVois can do!
+- 翻阅导览，从 JeVois Inventor 中的“视觉模块”下拉菜单中选择相应的机器视觉模块，看看 JeVois 能做什么！
 
 */
+

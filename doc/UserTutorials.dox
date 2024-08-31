@@ -1,10 +1,8 @@
-/*! \page UserTutorials JeVois user tutorials
+/*! \page UserTutorials JeVois 用户教程
 
-User tutorials explore machine vision functionalities provided by JeVois for end users. No or little programming
-experience is required. When programming is used, usually it is to program other devices that will interact with the
-JeVois smart camera (e.g., an Arduino, or scripts runing on a host computer).
+用户教程探索了 JeVois 为最终用户提供的机器视觉功能。无需或只需很少的编程经验。使用编程时，通常是对将与 JeVois 智能相机交互的其他设备进行编程（例如，Arduino 或在主机上运行的脚本）。
 
-Beginner-level tutorials
+初级教程 
 ------------------------
 
 - \jva33 \subpage UserInventor
@@ -26,7 +24,7 @@ Beginner-level tutorials
 
 - \subpage UserProDNN
 
-Advanced tutorials
+高级教程 
 -------------------
 
 - \subpage UserPanTilt

@@ -1,47 +1,38 @@
-/*! \page ProgrammerInvTimer Adding frames/s and CPU load information to Python modules
+/*! \page ProgrammerInvTimer 将帧/秒和 CPU 负载信息添加到 Python 模块
 
-The core JeVois software provides a number of helper classes to achieve things that are often useful in machine vision
-modules. One of them is a Timer class that computes average frames/s of processing, and adds some information about
-CPU usage, temperature, and frequency.
+JeVois 核心软件提供了许多辅助类来实现机器视觉模块中经常用到的功能。其中一个是 Timer 类，它计算平均每秒处理的帧数，并添加一些有关 CPU 使用率、温度和频率的信息。
 
-JeVois Timer class
+JeVois 计时器类 
 ------------------
 
-The jevois::Timer class is designed to be very simple to use. It has two functions, `start()` and `stop()`. From the
-Timer documentation:
+jevois::Timer 类的设计非常简单易用。它有两个函数，`start()` 和 `stop()`。摘自 Timer 文档：
 
-This class reports the time spent between `start()` and `stop()`, at specified intervals.  Because JeVois modules
-typically work at video rates, this class only reports the average time after some number of iterations through
-`start()` and `stop()`. Thus, even if the time of an operation between `start()` and `stop()` is only a few
-microseconds, by reporting it only every 100 frames one will not slow down the overall framerate too much. See Profiler
-for a class that provides additional checkpoints between `start()` and `stop()`.
+此类以指定的间隔报告 `start()` and `stop()` 之间所花费的时间。由于 JeVois 模块通常以视频速率工作，因此此类仅报告通过 `start()` and `stop()` 进行一定次数迭代后的平均时间。因此，即使 `start()` and `stop()` 之间的操作时间只有几微秒，通过每 100 帧仅报告一次，也不会使整体帧速率降低太多。请参阅 Profiler 以获取在 `start()` and `stop()` 之间提供额外检查点的类。
 
 Setting up
 ----------
 
-Here, we will start from where we ended in \ref ProgrammerInvHello: a simple ArUco tag detector written in Python +
-OpenCV using JeVois Inventor.
+在这里，我们将从 \ref ProgrammerInvHello ：一个使用 JeVois Inventor 以 Python + OpenCV 编写的简单 ArUco 标签检测器结束的地方开始。
 
-If you have not yet done so, create a new module called \b Hello now, as follows:
+如果你还没有这样做，请立即创建一个名为 \b Hello 的新模块，如下所示：
 
-- Select <b>New Python Module...</b> from the pull-down menu of JeVois Inventor (or press `CTRL-N`).
+- 从 JeVois Inventor 的下拉菜单中选择 <b>New Python Module...</b> （或按 `CTRL-N`）。
 
-- Fill in the details as shown below:
+- 填写如下所示的详细信息：
 
-  \jvimg{invhello1.png, 40%}
+\jvimg{invhello1.png, 40%}
 
-See \ref ProgrammerInvHello for more details.
+有关更多详细信息，请参阅 \ref ProgrammerInvHello 。
 
-Trying it out
+尝试一下 
 -------------
 
-We add a timer to our ArUco detector as follows:
-- In the constructor of our class (the `__init__()` function), instantiate a Timer
-- After we have received our input frame, start a measuring period
-- Process the input frame, here to detect ArUco tags
-- After all processing is done, stop the measuring period
-- The `stop()` function returns a pre-formatted string with frames/s, CPU, etc info, so we can just write that
-  into our output image using `cv2.putText()`
+我们向 ArUco 检测器添加一个计时器，如下所示：
+- 在我们类的构造函数中（`__init__()` 函数），实例化一个计时器
+- 收到输入帧后，开始测量周期
+- 处理输入帧，此处检测 ArUco 标签
+- 完成所有处理后，停止测量周期
+- `stop()` 函数返回一个预格式化的字符串，其中包含帧/秒、CPU 等信息，因此我们可以使用 `cv2.putText()` 将其写入输出图像中
 
 \code{.py}
 import libjevois as jevois
@@ -66,27 +57,21 @@ class Hello:
       outframe.sendCv(img)
 \endcode
 
+
 \jvimg{invtimer1.png, 70%}
 
-A few notes:
+几点说明：
 
-- In python, the time measured by our timer here does not include conversion of the input image from the camera, from
-  the native pixel format of the camera to BGR. It also does not include conversion of the input from BGR to the output
-  pixel format that will be sent over USB.
+- 在 Python 中，此处计时器测量的时间不包括将来自相机的输入图像从相机的原始像素格式转换为 BGR。它也不包括将输入从 BGR 转换为将通过 USB 发送的输出像素格式。
 
-- In C++ modules, in which we often access camera and USB buffers at a lower level, we usually make these conversions
-  explicitly and then also include their time in the measurements reported by the timer.
+- 在 C++ 模块中，我们经常在较低级别访问相机和 USB 缓冲区，我们通常明确地进行这些转换，然后将它们的时间包括在计时器报告的测量值中。
 
-- Hence, do not get too excited if you create a module in Python that seems to operate faster than its C++ counterpart,
-  maybe the difference is just due to the fact that the timer in Python is not including the image format conversion
-  times.
+- 因此，如果您在 Python 中创建的模块似乎比其 C++ 对应模块运行得更快，请不要太兴奋，也许这种差异只是因为 Python 中的计时器不包括图像格式转换时间。
 
-Going further
+进一步 
 -------------
 
-- JeVois also provides a Profiler class that allows you to measure timing for different checkpoints between `start()`
-  and `stop()`. Launch \jvmod{DarknetSingle} and enable log outputs (in JeVois Inventor, switch to the \b Console tab
-  and toggle log messages to \b USB) to see how it can be used, for example, to measure time spent computing each layer
-  of a multi-layer neural network. Every few seconds, you will get a report of time spent computing each layer.
+- JeVois 还提供了一个 Profiler 类，允许您测量 `start()` 和 `stop()` 之间不同检查点的时间。启动 \jvmod{DarknetSingle} 并启用日志输出（在 JeVois Inventor 中，切换到 \b Console 选项卡并将日志消息切换到 \b USB ）以了解如何使用它，例如，测量计算多层神经网络每一层所花费的时间。每隔几秒钟，您将获得一份计算每一层所花费时间的报告。
 
 */
+

@@ -1,68 +1,58 @@
-/*! \page UserArduinoIDE Using the Arduino IDE (Integrated Development Environment) to talk to JeVois
+/*! \page UserArduinoIDE 使用 Arduino IDE（集成开发环境）与 JeVois 对话
 
-Chances are that at one point or another you will program an Arduino to communicate with JeVois.
+很有可能在某个时候你会对 Arduino 进行编程以便与 JeVois 进行通信。
 
-In this tutorial, we install and use the Arduino IDE (Integrated Development Environment) to communicate with JeVois. We
-use the serial monitor included in the Arduino IDE. Communicating with your JeVois smart camera in this way allows you
-to set camera and machine vision parameters which are not otherwise available when you just grab video from JeVois. In
-fact, you can issue a number of interesting commands to JeVois to tune its behavior in many ways.
+在本教程中，我们安装并使用 Arduino IDE（集成开发环境）与 JeVois 通信。我们使用 Arduino IDE 中包含的串行监视器。通过这种方式与 JeVois 智能相机通信，您可以设置相机和机器视觉参数，而这些参数在您仅从 JeVois 抓取视频时是无法获得的。事实上，您可以向 JeVois 发出许多有趣的命令，以多种方式调整其行为。
 
-\note Note that since June 2018 it may be easier to use \ref JeVoisInventor.  The instructions below do not require
-JeVois Inventor are are provided in case you do not want to use the Inventor.
+\note 请注意，自 2018 年 6 月起，使用 \ref JeVoisInventor 可能会更容易。以下说明不需要 JeVois Inventor，以防您不想使用 Inventor。
 
-Getting the Arduino IDE
+获取 Arduino IDE 
 -----------------------
 
-First, install the Arduino software.
-- On Mac and Windows, download and install the package as explained at http://arduino.cc
-- On Ubuntu Linux, simply run <code>sudo apt-get install arduino</code>
+首先，安装 Arduino 软件。
+- 在 Mac 和 Windows 上，按照 http://arduino.cc 上的说明下载并安装软件包
+- 在 Ubuntu Linux 上，只需运行 <code>sudo apt-get install arduino</code>
 
-Making sure you can access the serial port of JeVois
+确保您可以访问 JeVois 的串行端口 
 ----------------------------------------------------
 
-We will start with using the serial-over-USB connection to JeVois. This is a virtual serial port that the JeVois smart
-camera exposes to your host computer when it is connected to that computer.
-- See \ref UserCli for general information about the JeVois command-line interface
-- See \ref USBserialLinux
-- See \ref USBserialWindows
-- See \ref USBserialMac
+我们将首先使用串行 USB 连接到 JeVois。这是 JeVois 智能相机连接到主机时向主机公开的虚拟串行端口。
+- 有关 JeVois 命令行界面的一般信息，请参阅 \ref UserCli
+- 请参阅 \ref USBserialLinux
+- 请参阅 \ref USBserialWindows
+- 请参阅 \ref USBserialMac
 
-Use the Arduino IDE to talk to JeVois
+使用 Arduino IDE 与 JeVois 对话 
 -------------------------------------
 
-Start your Arduino IDE. For example, on Linux, just type \c arduino
+启动 Arduino IDE。例如，在 Linux 上，只需输入 \c arduino
 
-Select the serial port of JeVois in \b Tools -> <b>Serial Port</b>. If it does not appear, maybe the permissions are
-wrong, e.g., on Linux, type <code>sudo chmod 777 /dev/ttyACM0</code> and see details at \ref USBserialLinux.
+在 \b Tools -> <b>Serial Port</b> 中选择 JeVois 的串口。如果没有出现，可能是权限错误，例如在 Linux 上，输入 <code>sudo chmod 777 /dev/ttyACM0</code> 并查看 \ref USBserialLinux 中的详细信息。
 
 \image html UserArduinoIDEport.png
 
-Open the serial monitor by going to \b Tools -> <b>Serial Monitor</b>. This opens a window where you will be able to
-type commands (top line) to send to JeVois, and you will see the answers below.
+通过转到 \b Tools -> <b>Serial Monitor</b>。这将打开一个窗口，您可以在其中键入命令（顶行）以发送给 JeVois，然后您将在下面看到答案。
 
-Before you start typing, make sure you set the line ending style to \b Newline, and the speed to \b 115200, at the
-bottom of the serial monitor window.
+在开始输入之前，请确保在串行监视器窗口的底部将行结束样式设置为 \b Newline ，并将速度设置为 \b 115200 。
 
 \image html UserArduinoIDEspeed.png
 
-You can now type a command in the top line of the serial monitor, and as you press \b RETURN or click the \b Send
-button, the command will be sent to JeVois and results will be printed in the window. For example, try typing \c info;
-you should see this:
+现在，您可以在串行监视器的顶行中输入命令，当您按下 \b RETURN 或单击 \b Send 按钮时，该命令将发送到 JeVois，结果将打印在窗口中。例如，尝试输入 \c info ；您应该会看到以下内容：
 
 \image html UserArduinoIDEinfo.png
 
-Then type \c listmappings, which should show something like this:
+然后输入 \c listmappings ，它应该显示如下内容：
 
 \image html UserArduinoIDElistmappings.png
 
-And so on. Try to experiment with various commands as detailed in \ref UserCli
+等等。尝试使用 \ref UserCli 中详细介绍的各种命令
 
-Using serial communications while streaming video
+在流式传输视频时使用串行通信 
 -------------------------------------------------
 
-Video streaming and serial communication are possible at the same time. This is useful to allow you to change parameters
-of running modules. See \ref UserParameters for more info.
+可以同时进行视频流和串行通信。这很有用，可以让您更改正在运行的模块的参数。有关更多信息，请参阅 \ref UserParameters 。
 
 
 
 */
+

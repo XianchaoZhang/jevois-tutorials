@@ -1,73 +1,59 @@
 /*! \page ProgrammerInvHello Hello JeVois using JeVois Inventor
 
-This tutorial will show you how to create a simple machine vision module that runs on the JeVois smart camera, using the
-JeVois Inventor graphical user interface.
+本教程将向您展示如何使用 JeVois Inventor 图形用户界面创建在 JeVois 智能相机上运行的简单机器视觉模块。
 
-Getting started
+入门 
 ---------------
 
-- Download and install JeVois Inventor from http://jevois.org/start/start.html
+- 从 http://jevois.org/start/start.html 下载并安装 JeVois Inventor
 
-- Play with it a bit by going through the tutorial \ref UserInventor
+- 通过教程 \ref UserInventor 进行尝试
 
-Creating your first module
+创建您的第一个模块 
 --------------------------
 
-- Select <b>New Python Module...</b> from the pull-down menu of JeVois Inventor (or press `CTRL-N`).
+- 从 JeVois Inventor 的下拉菜单中选择<b>新建 Python 模块...</b>（或按 `CTRL-N`）。
 
-- Fill in the details as shown below:
+- 填写如下所示的详细信息：
 
   \jvimg{invhello1.png, 40%}
 
-  A few notes:
-  
-  + Module Name is the name of your module, and Vendor Name is used to group all the modules you create under a single
-    directory.
-  + Module name and Vendor name must begin with an uppercase letter.
-  + Hover your mouse over each field to see some tips.
+  几点注意事项：
+  + 模块名称是模块的名称，供应商名称用于将您创建的所有模块分组到单个目录下。
+  + 模块名称和供应商名称必须以大写字母开头。
+  + 将鼠标悬停在每个字段上可查看一些提示。
 
-  + You need to provide at least the data shown in black font in the above screenshot. If you do not provide the data
-    shown in gray font in the above, blank values will be used (not the sample suggested values in gray font). The gray
-    values are just suggestions, but not defaults. So, even if you like those suggestions, you need to type them in
-    (e.g., you need to type 320, 240, and 33 for the USB output video format to confirm that this is indeed what you
-    want).
-  + USB output video format is the video resolution and frame rate that JeVois will send to your host computer. This is
-    the resolution that you want to use for the results of your machine vision algorithm.
-  + Camera sensor video format is the resolution at which JeVois will capture images from its camera sensor.
-  + The task of a (basic) JeVois machine vision module is: for each camera sensor image, create a USB output image.
+  + 您至少需要提供上面屏幕截图中黑色字体显示的数据。如果您不提供上面灰色字体显示的数据，则将使用空白值（而不是灰色字体的示例建议值）。灰色值只是建议，而不是默认值。因此，即使您喜欢这些建议，也需要输入它们（例如，您需要为 USB 输出视频格式输入 320、240 和 33 以确认这确实是您想要的）。
+  + USB 输出视频格式是 JeVois 将发送到主机的视频分辨率和帧速率。这是您想要用于机器视觉算法结果的分辨率。
+  + 相机传感器视频格式是 JeVois 从其相机传感器捕获图像的分辨率。
+  + (基本) JeVois 机器视觉模块的任务是：为每个相机传感器图像创建一个 USB 输出图像。
 
-- When you click \b Finish, JeVois will restart. This is needed because JeVois will now add the new USB output video
-  format as one of the formats that it can produce, but USB video cameras were not meant to be able to change their
-  video formats at runtime. So we need to simulate a camera disconnect, and then a re-connect, for the host computer to
-  request again the list of supported video resolutions from JeVois and to discover our new module.
+- 单击 \b Finish 时，JeVois 将重新启动。这是必要的，因为 JeVois 现在将添加新的 USB 输出视频格式作为其可以生成的格式之一，但 USB 摄像机并不打算在运行时更改其视频格式。因此，我们需要模拟摄像机断开连接，然后重新连接，以便主机再次向 JeVois 请求支持的视频分辨率列表并发现我们的新模块。
 
-- After JeVois restarts, you should be able to select your new module from the <b>Vision Module</b> pull-down menu:
+- JeVois 重启后，您应该能够从 <b>Vision Module</b> 下拉菜单中选择新模块：
   \jvimg{invhello2.png, 70%}
 
-- The module's code is pre-filled by default to run a simple Laplacian edge detector.
+- 该模块的代码默认预先填充，以运行简单的拉普拉斯边缘检测器。
 
 
-For more information:
+了解更多信息：
 
 - \ref Concepts
 - \ref JeVoisInventor
 - \ref UserInventor
 
-Writing the code
+编写代码 
 ----------------
 
-Switch to the \b Code tab of JeVois Inventor. You will see an editor for Python code.
+切换到 JeVois Inventor 的 \b Code 选项卡。您将看到一个 Python 代码编辑器。
 
-JeVois supports full Python 3.6, numpy, and OpenCV 3.4.0.
+JeVois 支持完整的 Python 3.6、numpy 和 OpenCV 3.4.0。
 
-As mentioned above, our mission is to compute something interesting in the video frames captured by the JeVois camera
-sensor, and to create some result video frames that we can send to a host computer over the USB link.
+如上所述，我们的任务是在 JeVois 相机传感器捕获的视频帧中计算一些有趣的东西，并创建一些结果视频帧，我们可以通过 USB 链接将其发送到主机。
 
-The JeVois core software that runs in the smart camera takes care of all the hard details of capturing images from the
-sensor and of sending output images to the USB link. So what is left for us is to focus on the transformation from an
-input image to an output image.
+智能相机中运行的 JeVois 核心软件负责处理从传感器捕获图像和将输出图像发送到 USB 链路的所有细节。因此，我们剩下的工作就是关注从输入图像到输出图像的转换。
 
-A module that does not change the image, hence making JeVois behave like a regular USB webcam, would look like this:
+一个不会改变图像的模块，因此使 JeVois 的行为就像一个普通的 USB 网络摄像头，它看起来像这样：
 
 \code{.py}
 import libjevois as jevois
@@ -80,44 +66,39 @@ class Hello:
       outframe.sendCv(img)
 \endcode
 
-The \b process() function of class \b Hello will be called by the JeVois core, for every video frame.
 
-The parameter \b inframe of \b process() is a proxy to the next video frame from the camera. It allows us to request,
-possibly wait for, and eventually obtain the next frame captured by the camera sensor.
+对于每个视频帧，JeVois 核心将调用类 \b Hello 的 \b process() 函数。
 
-Likewise, the parameter \b outframe is a proxy to the next frame that will be sent to the host computer over the USB
-link.
+\b process() 的参数 \b inframe 是来自摄像头的下一个视频帧的代理。它允许我们请求、可能等待并最终获取摄像头传感器捕获的下一个帧。
 
-In the above code, we basically:
+同样，参数 \b outframe 是通过 USB 链路发送到主机的下一帧的代理。
 
-- Request the next video frame from the camera sensor, as a BGR image (blue, green, red - the format most commonly used
-  by OpenCV) by calling <b>inframe.getCvBGR()</b>
-- Send that image to the host computer over USB by calling <b>outframe.sendCv()</b>
+在上面的代码中，我们基本上：
 
-Try it for yourself:
-- In JeVois Inventor, select all the code with `CTRL-A` and delete it with `DEL`
-- Select all the above code and paste it into JeVois Inventor
-- Click <b>Save To JeVois</b> or press `CTRL-S`
-- You just transformed your smart JeVois Camera into a plain dumb camera!
+- 通过调用 <b>inframe.getCvBGR()</b> 向摄像头传感器请求下一个视频帧，作为 BGR 图像（蓝色、绿色、红色 - OpenCV 最常用的格式）
+- 通过调用 <b>outframe.sendCv()</b> 将该图像通过 USB 发送到主机
+
+亲自尝试一下：
+- 在 JeVois Inventor 中，使用 `CTRL-A` 选择所有代码，然后使用 `DEL` 删除
+- 选择上述所有代码并将其粘贴到 JeVois Inventor
+- 单击 <b>保存到 JeVois</b> 或按 `CTRL-S`
+- 您刚刚将智能 JeVois 相机变成了普通的哑相机！
 
 \jvimg{invhello3.png, 70%}
 
 
-But what about the hello part?
+但是 hello 部分呢？ 
 ------------------------------
 
-To start transitioning from plain to smart camera, let us see how we can make the output image different than the input
-image.
+要开始从普通相机过渡到智能相机，让我们看看如何使输出图像不同于输入图像。
 
-- Images obtained from <b>inframe.getCvBGR()</b> are numpy arrays, which is what most OpenCV functions operate on.
+- 从 <b>inframe.getCvBGR()</b> 获取的图像是 numpy 数组，这是大多数 OpenCV 函数操作的对象。
 
-- Likewise for images that we send out using <b>outframe.sendCv()</b>
+- 对于我们使用 <b>outframe.sendCv()</b> 发送的图像也是如此
 
-- This means that, from the above code, we should be able to write our hello message by using some OpenCV function that
-  writes text strings in images. A quick web search for <em>opencv 3.4 write text python</em> gets us to 
-  https://docs.opencv.org/3.4.0/dc/da5/tutorial_py_drawing_functions.html
+- 这意味着，从上面的代码中，我们应该能够使用一些在图像中写入文本字符串的 OpenCV 函数来编写我们的问候消息。快速网络搜索 <em>opencv 3.4 write text python</em> 即可找到 https://docs.opencv.org/3.4.0/dc/da5/tutorial_py_drawing_functions.html
 
-- Let's do like they do under <em>Adding text to images</em>:
+- 让我们像在<em>向图像添加文本</em>下所做的那样操作：
 
 \code{.py}
 import libjevois as jevois
@@ -135,42 +116,38 @@ class Hello:
       outframe.sendCv(img)
 \endcode
 
-\note The original example in the OpenCV docs used prefix <b>cv.</b> for OpenCV functions, but we use <b>cv2.</b> so
-remember to adjust code that you cut and paste accordingly.
+
+\note OpenCV 文档中的原始示例对 OpenCV 函数使用了前缀 <b>cv.</b>，但我们使用了 <b>cv2.</b>，因此请记住相应地调整剪切和粘贴的代码。
 
 \jvimg{invhello4.png, 70%}
 
-What if I make mistakes?
+如果我犯了错误怎么办？ 
 ------------------------
 
-No worries, JeVois will catch your errors and display them in the video output. For example, delete the line
+不用担心，JeVois 会捕获你的错误并将其显示在视频输出中。例如，删除以下行
 
 \code{.py}
       font = cv2.FONT_HERSHEY_SIMPLEX
 \endcode
 
-and save to JeVois. You should see:
+并保存到 JeVois。你应该看到：
 
 \jvimg{invhello5.png, 70%}
 
-Now, please read the entire message fully before you ask us questions. Here, the error is clearly explained on the last
-line of the error message:
+现在，请在向我们提问之前完整阅读整个消息。这里，错误信息的最后一行清楚地解释了错误：
 
 \verbatim
 NameError: name 'font' is not defined
 \endverbatim
 
-Paste the line you deleted back in its proper place, save to JeVois, and you should see the module working again.
+将您删除的行粘贴回正确的位置，保存到 JeVois，您应该会看到模块再次工作。
 
-\note If the message is too long to read in the video image (e.g., if you are writing a module with very low output
-resolution), you can also see the same message as text by switching to the \b Console tab of the Inventor and clicking
-on the \b USB button for <a>Log messages</a>.
+\note 如果消息太长而无法在视频图像中读取（例如，如果您正在编写具有非常低的输出分辨率的模块），您也可以通过切换到 \b Inventor 的控制台选项卡并单击 \b USB 按钮来查看<a>日志消息</a>，从而以文本形式查看相同的消息。
 
-How do I make the ArUco tag detector you showed in the JeVois Inventor video?
------------------------------------------------------------------------------
+如何制作 JeVois Inventor 视频中展示的 ArUco 标签检测器？
+----------------------------------------------------------------------------
 
-That is easy: ArUco tag detection is built into OpenCV. You just need 5 lines of new code to create that demo (they come
-from a quick web search for <em>opencv aruco python</em>):
+这很简单：ArUco 标签检测内置于 OpenCV 中。您只需要 5 行新代码即可创建该演示（它们来自对 <em>opencv aruco python</em> 的快速网络搜索）：
 
 \code{.py}
 import libjevois as jevois
@@ -190,22 +167,24 @@ class Hello:
       outframe.sendCv(img)
 \endcode
 
-Show it some ArUcos, for example those from the screenshots of the JeVois \jvmod{DemoArUco} module.
+
+向它展示一些 ArUcos，例如来自 JeVois \jvmod{DemoArUco} 模块的屏幕截图的那些。
 
 \jvimg{invhello6.png, 70%}
 
-For more info, see https://docs.opencv.org/3.1.0/d5/dae/tutorial_aruco_detection.html
+有关更多信息，请参阅 https://docs.opencv.org/3.1.0/d5/dae/tutorial_aruco_detection.html
 
 
-Next steps
-----------
+下一步  
+---------- 
 
-You are ready to write your own powerful machine vision modules for JeVois!
+您已准备好为 JeVois 编写自己的强大的机器视觉模块！
 
-For further reading:
+进一步阅读：
 
 - \ref ProgrammerPython
 - \ref ModulePythonTutorial
 - \ref ProgrammerTutorials
 
 */
+

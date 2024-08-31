@@ -1,154 +1,132 @@
-/*! \page UserParameters Changing machine vision parameters
+/*! \page UserParameters 更改机器视觉参数
 
-By connecting to the serial command-line interface of JeVois, you can issue commands (either interactively, or through a
-program) to modify how the machine vision algorithm currently running inside JeVois works.
+通过连接到 JeVois 的串行命令行接口，您可以发出命令（以交互方式或通过程序）来修改 JeVois 内部当前运行的机器视觉算法的工作方式。
 
-Here we will take the simple example of looking for different kinds of barcodes in the field of view of JeVois.
+这里我们将举一个简单的例子，在 JeVois 的视野范围内寻找不同类型的条形码。
 
 \image html UserParametersQR.png
 
-This tutorial requires a \jvversion{1.1} or later microSD card.
+本教程需要 \jvversion{1.1} 或更高版本的 microSD 卡。
 
-\note Note that since June 2018 it may be easier to use \ref JeVoisInventor.  The instructions below do not require
-JeVois Inventor are are provided in case you do not want to use the Inventor.
+\note 请注意，自 2018 年 6 月起，使用 \ref JeVoisInventor 可能会更容易。以下说明不需要 JeVois Inventor，以防您不想使用 Inventor。
 
-Pre-requisites
+先决条件 
 --------------
 
-You need to know how to stream video from JeVois, how to change video mode, and how to communicate with the serial
-command-line interface of JeVois.
+您需要了解如何从 JeVois 流式传输视频、如何更改视频模式以及如何与 JeVois 的串行命令行界面通信。
 
-- [Download and flash the latest JeVois microSD image](http://jevois.org/start/start.html)
+- [下载并刷新最新的 JeVois microSD 映像](http://jevois.org/start/start.html)
 - \ref UserGettingStarted
 - \ref UserCli
 - \ref USBserialLinux
 - \ref USBserialWindows
 - \ref USBserialMac
-- And/or \ref UserCMD
+- 和/或 \ref UserCMD
 
-Getting started
+入门  
 ---------------
 
-- Connect JeVois to a host computer.
+- 将 JeVois 连接到主机。
 
-- Start video capture software and select <b>YUYV 320x286 @ 30.0 fps</b> which should launch the \jvmod{DemoQRcode}
-  module.
+- 启动视频捕获软件并选择<b>YUYV 320x286 @ 30.0 fps</b>，这将启动 \jvmod{DemoQRcode} 模块。
 
-- Start a serial terminal and connect to the serial-over-USB port of JeVois.
+- 启动串行终端并连接到 JeVois 的串行 USB 端口。
 
-Listing the available parameters
+列出可用的参数
 --------------------------------
 
-The \jvmod{DemoQRcode} module exposes several parameters that are described in its [documentation
-page](http://jevois.org/moddoc/DemoQRcode/modinfo.html), see the table of parameters below the screenshots on that page.
+\jvmod{DemoQRcode} 模块公开了其 [文档页面](http://jevois.org/moddoc/DemoQRcode/modinfo.html) 中描述的几个参数，请参阅该页面屏幕截图下方的参数表。
 
-Once the module is loaded and running (by selecting the appropriate video resolution in the host video capture
-software), you can also see the parameters by typing, in the serial terminal connected to JeVois:
+一旦模块加载并运行（通过在主机视频捕获软件中选择适当的视频分辨率），您还可以通过在连接到 JeVois 的串行终端中键入以下内容来查看参数：
 
 \verbatim
 help
 \endverbatim
 
-which lists all available parameters and commands; here, in particular, we find 3 parameters that are specific to the QR
-code decoding module:
+列出了所有可用的参数和命令；特别是，我们发现了 3 个特定于 QR 码解码模块的参数：
 
 \verbatim
 QRcode/Barcode Options:
   --ydensity (int) default=[1]
-    Scanner horizontal scan density (pixel stride), or 0 to disable
+    扫描仪水平扫描密度（像素步幅），或 0 禁用
        Exported By: DemoQRcode:qrcode
 
   --xdensity (int) default=[1]
-    Scanner vertical scan density (pixel stride), or 0 to disable
+    扫描仪垂直扫描密度（像素步幅），或 0 表示禁用
        Exported By: DemoQRcode:qrcode
 
   --symbol (string) default=[ALL]
-    Type(s) of QR code / barcode symbols searched for, multiple entries are possible and should be separated by / characters. Selecting many symbol types or ALL will slow down processing. Supported symbols are: QRCODE, EAN2, EAN5, EAN8, EAN13, UPCE, UPCA, ISBN10, ISBN13, COMPOSITE, I25, DATABAR, DATABAREXP, CODABAR, CODE39, PDF417, CODE93, and CODE128
+    搜索的二维码/条形码符号类型，可以输入多个，并且应使用 / 字符分隔。选择多个符号类型或全部会降低处理速度。支持的符号有：QRCODE、EAN2、EAN5、EAN8、EAN13、UPCE、UPCA、ISBN10、ISBN13、COMPOSITE、I25、DATABAR、DATABAREXP、CODABAR、CODE39、PDF417、CODE93 和 CODE128
        Exported By: DemoQRcode:qrcode value=[QRCODE]
 \endverbatim
 
-Changing a parameter
+更改参数 
 --------------------
 
-Looking at the last line of the entry for \b symbol above, we see that the \p symbol parameter was set to value \b
-QRCODE; that is, the module is looking for 2-dimensional Quick-Response codes of the type shown in the module's
-[documentation page](http://jevois.org/moddoc/DemoQRcode/modinfo.html).
+查看上面 \b symbol 条目的最后一行，我们看到 \p symbol 参数设置为值 \b QRCODE ；也就是说，该模块正在寻找模块 [文档页面](http://jevois.org/moddoc/DemoQRcode/modinfo.html) 中显示类型的二维快速响应码。
 
-Let's change that to \b ALL to decode all kinds of 1D barcodes as well, for example the ISBN barcode on a book:
+我们将其改为 \b ALL 来解码所有类型的一维条形码，例如书籍上的 ISBN 条形码：
 
 \verbatim
 setpar symbol ALL
 \endverbatim
 
-which should simply return
+应该只返回
 
 \verbatim
 OK
 \endverbatim
 
-We can verify that the change took place in three ways:
+我们可以通过三种方式验证变化的发生：
 
-- type \c help again and check the \p symbol parameter as it is listed there. At the bottom of the description of the
-  parameter, note:
+- 再次输入 \c help 并检查 \p symbol 参数，因为它列在那里。在参数描述的底部，注意：
   \verbatim
   Exported By: DemoQRcode:qrcode value=[ALL]
   \endverbatim
-  The value shown is the one we selected. This extra information about the parameter's value is only shown when the
-  currently selected value differs from the default value.
+  显示的值是我们选择的值。仅当当前选定的值与默认值不同时，才会显示有关参数值的额外信息。
 
-- Get the current value of the parameter, by typing:
+- 通过键入获取参数的当前值：
   \verbatim
   getpar symbol
   \endverbatim
-  which should return
+  它应该返回
   \verbatim
   engine:DemoQRcode:qrcode:symbol ALL
   OK
-  \endverbatim
-  The reason why the returned parameter name is longer in the reply is because JeVois supports complex machine vision
-  modules which may include several instances of a same component algorithm. In such case, the longer name allows
-  unambiguous access to each parameter instance. For example, a new module might include two instances of the QRcode
-  algorithm component, one set for 2D QR codes and another trying, in parallel, to find 1D ISBN10 barcodes. For more
-  information about parameter names and descriptors, see the programmer documentation for \ref component.
+  \endverbatim 
+  返回的参数名称在回复中较长的原因是 JeVois 支持复杂的机器视觉模块，这些模块可能包含同一组件算法的多个实例。在这种情况下，较长的名称允许明确访问每个参数实例。例如，一个新模块可能包含 QRcode 算法组件的两个实例，一组用于 2D QR 码，另一组并行尝试查找 1D ISBN10 条形码。有关参数名称和描述符的更多信息，请参阅 \ref component 的程序员文档。
 
-- Check in the video feed that the algorithm is now indeed detecting 1D barcodes as well: show it the barcode of a book
-  you have (or just search the web for 'ISBN barcode' and display some pictures of barcodes on your screen, then point
-  JEVOIS to them; make sure they are large enough), JeVois should now detect and report those.
+- 在视频源中检查算法现在确实也在检测一维条形码：向它展示您拥有的一本书的条形码（或者只是在网上搜索 'ISBN barcode' 并在屏幕上显示一些条形码的图片，然后将 JEVOIS 指向它们；确保它们足够大），JeVois 现在应该可以检测并报告这些。
 
 \image html UserParametersAll.png
 
-Setting default parameters
+设置默认参数 
 --------------------------
 
-Once you have played with parameters interactively, you may want to set some default values each time a given module is
-loaded. This is possible in JeVois through two configuration files, which are located in the directory of the module of
-interest (if the files are absent, then no action is taken by the module):
+一旦你以交互方式使用参数，你可能希望在每次加载给定模块时设置一些默认值。这在 JeVois 中可以通过两个配置文件实现，这两个配置文件位于感兴趣的模块的目录中（如果文件不存在，则模块不会采取任何操作）：
 
-- \b params.cfg - list of parameters settings that should be applied each time a module is loaded. Only parameters of
-  the module or its component algorithms can be set here. The parameters are set each time the module is loaded (e.g.,
-  the corresponding video resolution is selected by video capture software on the host computer).
+- \b params.cfg - 每次加载模块时应应用的参数设置列表。此处只能设置模块或其组件算法的参数。每次加载模块时都会设置参数（例如，主机上的视频捕获软件会选择相应的视频分辨率）。
 
-- \b script.cfg - this is a more general script that is run after the module is loaded and initialized. The script is in
-  the same form as you would type commands interactively in the command-line interface.
+- \b script.cfg - 这是在模块加载和初始化后运行的更通用的脚本。该脚本的形式与您在命令行界面中以交互方式输入命令的形式相同。
 
-For example, the default \b params.cfg for the DemoQRcode module is located in
-<b>JEVOIS:/modules/JeVois/DemoQRcode/params.cfg</b> on the MicroSD card and contains:
+例如，DemoQRcode 模块的默认 \b params.cfg 位于 MicroSD 卡上的 <b>JEVOIS:/modules/JeVois/DemoQRcode/params.cfg</b>，包含：
 
 \verbatim
-# Default parameters that are set upon loading the module
+# 加载模块时设置的默认参数
 
-# Only look for QR codes by default, faster than looking for any kind of barcode and qr-code:
+# 默认仅查找二维码，比查找任何类型的条形码和二维码都快：
 qrcode:symbol = QRCODE
 \endverbatim
 
-The effect is that, by default, we only scan for 2D QR-codes.
+效果是，默认情况下，我们只扫描二维码。
 
-The equivalent \b script.cfg would be in <b>JEVOIS:/modules/JeVois/DemoQRcode/script.cfg</b> and would contain:
+等效的 \b script.cfg 将位于 <b>JEVOIS:/modules/JeVois/DemoQRcode/script.cfg</b> 中，并且包含：
 
 \verbatim
 setpar qrcode:symbol QRCODE
 \endverbatim
 
-For more information about \b params.cfg and \b script.cfg, see \ref ProgrammerSDK.
+有关 \b params.cfg 和 \b script.cfg 的更多信息，请参阅 \ref ProgrammerSDK 。
 
 */
+

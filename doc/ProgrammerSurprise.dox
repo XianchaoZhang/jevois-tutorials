@@ -1,162 +1,101 @@
-/*! \page ProgrammerSurprise Surprise-based surveillance camera
+/*! \page ProgrammerSurprise Surprise-based 监控摄像头
 
-JeVois can directly process video input from its camera sensor, and record results to microSD. Here we will develop a
-new module, which records a short video clip each time a surprising event is detected in the video stream, so that the
-event is captured to microSD. This is an enhanced version of standard motion-based video surveillance systems, which
-only record video when things are moving. One drawback of such systems is that repetitive motions, such as foliage
-moving in the wind, easily trip the motion detection algorithm and could potentially trigger recording of a lot of
-data.
+JeVois 可以直接处理来自其摄像头传感器的视频输入，并将结果记录到 microSD 中。在这里，我们将开发一个新模块，每当在视频流中检测到意外事件时，该模块都会录制一段简短的视频片段，以便将事件捕获到 microSD 中。这是标准基于运动的视频监控系统的增强版，该系统仅在物体移动时录制视频。此类系统的一个缺点是重复的运动（例如风中摇曳的树叶）很容易触发运动检测算法，并可能触发大量数据的记录。
 
-This tutorial will show you how to
+本教程将向您展示如何 
 ----------------------------------
 
-- Create a new JeVois component within jevoisbase to compute surprise over video frames
-- Create a new JeVois module within jevoisbase to detect surprising events and save a short video clip to microSD for
-  each event
-- Compile, install and test on your host computer first
-- Then cross-compile, install and test on your JeVois smart camera
-- Use the jevois::Profiler to profile execution of your code
-- Use pre-recorded video to fine-tune your algorithm
+- 在 jevoisbase 中创建一个新的 JeVois 组件，以计算视频帧的意外情况
+- 在 jevoisbase 中创建一个新的 JeVois 模块，以检测意外事件并为每个事件保存一个简短的视频片段到 microSD
+- 首先在主机上编译、安装和测试
+- 然后在 JeVois 智能相机上进行交叉编译、安装和测试
+- 使用 jevois::Profiler 分析代码的执行情况
+- 使用预先录制的视频来微调算法
 
-This is a fairly long and detailed tutorial. To get you excited, let us look at the payoff upfront: Here is an hour-long
-surveillance video. It is very boring overall, except that a few brief surprising things occur (a few seconds each). Can
-you find them?
+这是一个相当长且详细的教程。为了让你兴奋，让我们先看看结果：这是一段长达一小时的监控视频。总体来说，它非常无聊，除了发生了一些简短的令人意外的事情（每次几秒钟）。你能找到它们吗？
 
 \youtube{aSKncW7Jxrs}
 
-Here is what the SurpriseRecorder module we develop in this tutorial found (4 true events plus 2 false alarms):
+这是我们在本教程中开发的 SurpriseRecorder 模块发现的结果（4 个真实事件加 2 个误报）：
 
 \youtube{zIslIsHBfYw}
 
-That is, it summarized 1 hour of video into 6 snippets of about 12 seconds each (50x reduction: you just watch slightly
-over a minute of surprising snippets instead of 1 hour of mostly boring footage). Upon closer inspection after this
-tutorial results video was made, the last detected event actually appears to be a bird flying very quickly across the
-video frames. So, as far as surprise is concerned, this is actually a hit rather than a false alarm noted in the results
-video (i.e., it was a surprising event, although possibly not \a relevant to a surveillance goal - see
-[here](https://www.ncbi.nlm.nih.gov/pubmed/28221085) for recent highly related work on relevance). So we got 5 hits and
-1 false alarm. No misses as far as we can tell by watching the full hour-long video, i.e., our module did detect all the
-boats (and birds) that passed by. Not bad at all!
+也就是说，它将 1 小时的视频总结为 6 个片段，每个片段大约 12 秒（减少了 50 倍：您只需观看一分钟多一点的令人意外的片段，而不是 1 小时的大部分无聊的镜头）。制作本教程结果视频后仔细检查，最后检测到的事件实际上似乎是一只鸟在视频帧上飞得非常快。因此，就意外而言，这实际上是结果视频中指出的命中而不是误报（即，这是一个令人意外的事件，尽管可能与监视目标无关 - 请参阅 [此处](https://www.ncbi.nlm.nih.gov/pubmed/28221085) 了解最近高度相关的相关性工作）。所以我们得到了 5 个命中和 1 个误报。据我们观看完整的一小时视频所知，没有遗漏，即我们的模块确实检测到了所有经过的船只（和鸟类）。一点也不差！
 
-Theory of operation
+操作理论 
 -------------------
 
-We will use Itti & Baldi's theory of surprise to detect surprising events in video.
+我们将使用 Itti 和 Baldi 的意外理论来检测视频中的意外事件。
 
-They defined surprise in a formal, quantitative manner (for the first time!), as follows: An observation is surprising
-if it significantly affects the internal (subjective) beliefs of an observer. For example, if I believe that there is a
-10% chance of rain today (my prior belief), and then I look outside and I see only a few small scattered clouds, then I
-may still believe in that same 10% chance of rain (posterior belief after the observation). My observation was not
-surprising, and Itti & Baldi say that this is because it did not affect my beliefs. Formally, when my posterior beliefs
-after an observation are very similar to what my prior beliefs were before the observation, the observation carries no
-surprise. In contrast, if I see a sky covered with menacing dark clouds all over, I may revise my belief to a 80% chance
-of rain today. Because my posterior beliefs are now much different than my prior beliefs (80% vs 10% chance of rain),
-the observation of clouds is said to carry a high surprise. Itti & Baldi further specify how to compute surprise by
-using Bayes' theorem to compute posterior beliefs in a principled way, and by using the Kullback-Leibler (KL) divergence
-to measure the difference between posterior and prior distributions of beliefs. This gives rise to a new quantitative
-measure of surprise, with a new unit, the \a wow (one wow of surprise is experienced when your belief in something
-doubles).
+他们（首次）以正式、定量的方式对意外进行了定义，如下：如果观察结果显著影响观察者的内部（主观）信念，则该观察结果令人意外。例如，如果我相信今天有 10% 的降雨概率（我之前的信念），然后我向外看，只看到几朵小云，那么我可能仍然相信同样的 10% 的降雨概率（观察后的后验信念）。我的观察结果并不令人意外，Itti 和 Baldi 说这是因为它没有影响我的信念。正式地，当我观察后的后验信念与观察前的先验信念非常相似时，观察结果并不令人意外。相反，如果我看到天空到处都是阴云密布，我可能会将我的信念修改为今天有 80% 的降雨概率。由于我的后验信念现在与我之前的信念（80% 和 10% 的降雨概率）大不相同，因此观察云被认为具有很高的意外性。 Itti & Baldi 进一步详细说明了如何计算意外，即使用贝叶斯定理以原则性(principled)方式计算后验信念，并使用 Kullback-Leibler (KL) 散度来测量信念的后验分布和先验分布之间的差异。这产生了一种新的意外定量测量方法，其新单位是 \a wow （当您对某事的信念加倍时，您会体验到一次意外）。
 
-For more information, check out [L. Itti, P. F. Baldi, Bayesian Surprise Attracts Human Attention, Vision Research,
-  Vol. 49, No. 10, pp. 1295-1306, May 2009](http://ilab.usc.edu/publications/doc/Itti_Baldi09vr.pdf)
+欲了解更多信息，请参阅 [L. Itti, P. F. Baldi, Bayesian Surprise Attracts Human Attention, Vision Research, Vol. 49, No. 10, pp. 1295-1306, May 2009](http://ilab.usc.edu/publications/doc/Itti_Baldi09vr.pdf)
 
-Here, we will:
+在这里，我们将：
 
-- Grab video frames;
+- 抓取视频帧；
 
-- Compute feature maps and a saliency map. These will provide some degree of invariance and robustness to noise, which
-  will yield more stable overall results than if we were to compute surprise directly over RGB pixel values (see next
-  point);
+- 计算特征图和显著性图。这些将提供一定程度的不变性和对噪声的鲁棒性，这将产生比我们直接在 RGB 像素值上计算意外更稳定的整体结果（参见下一点）；
 
-- Compute surprise in each pixel of each feature map. This is similar to what Itti & Baldi did but simplified to run in
-  real time on the JeVois smart camera. Each pixel in each feature map will over time gather beliefs about what it
-  usually 'sees' at that location in the video. When things change significantly and in a surprising way, that pixel
-  will emit a local surprise signal. Because surprise is more complex than just computing an instantaneous difference,
-  or measuring whether the current observation simply is an outlier to a learned distribution, it will be able to handle
-  periodic motions (foliage in the wind, ripples on a body of water), periodic flickers (a constantly blinking light in
-  the field of view), and noise;
+- 计算每个特征图的每个像素中的意外。这类似于 Itti & Baldi 所做的，但简化为在 JeVois 智能相机上实时运行。每个特征图中的每个像素都会随着时间的推移收集关于它通常在视频中该位置“看到”的内容的信念。当事物发生显着且令人意外的变化时，该像素将发出局部意外信号。因为意外比仅仅计算瞬时差异或测量当前观察是否只是学习分布的异常值更复杂，它将能够处理周期性运动（风中的树叶，水体上的涟漪），周期性闪烁（视野中不断闪烁的光）和噪音；
 
-- Aggregate into a single overall surprise value (we will simply take the max over all locations);
+- 聚合为一个整体意外值（我们将简单取所有位置的最大值）；
 
-- When overall surprise crosses a threshold, we will trigger recording of video frames. To provide context, we will use
-  a rolling buffer of frames so that we always record +/- 10 seconds of video around each surprising event;
+- 当整体意外超过阈值时，我们将触发视频帧的录制。为了提供背景信息，我们将使用滚动帧缓冲区，以便始终录制每个意外事件前后 +/- 10 秒的视频；
 
-- Thus, the expected output of this module is a series of short video clips recorded to microSD, one for each surprising
-  event that occurred.
+- 因此，该模块的预期输出是记录到 microSD 的一系列短视频片段，每个发生的令人意外的事件一个片段。
 
-This approach is related to [R. C. Voorhies, L. Elazary, L. Itti, Neuromorphic Bayesian Surprise for Far Range Event
-Detection, In Proc 9th IEEE AVSS, Beijing, China, Sep
-2012](http://ilab.usc.edu/publications/doc/Voorhies_etal12avss.pdf)
+该方法与 [R. C. Voorhies, L. Elazary, L. Itti, Neuromorphic Bayesian Surprise for Far Range Event Detection, In Proc 9th IEEE AVSS, Beijing, China, Sep 2012](http://ilab.usc.edu/publications/doc/Voorhies_etal12avss.pdf) 相关。
 
-Plan of attack
+攻击计划 
 --------------
 
-- We will use the \ref Saliency component provided by jevoisbase.
+- 我们将使用 jevoisbase 提供的 \ref Saliency 组件。
 
-- We will use an approach similar to that of the \ref SaveVideo module of jevoisbase to buffer and save video frames to
-  MicroSD.
+- 我们将使用类似于 jevoisbase 的 \ref SaveVideo 模块的方法来缓冲和保存视频帧到 MicroSD。
 
-- Because of the dependency on Saliency, we will create our new module inside jevoisbase.
+- 由于对 Saliency 的依赖，我们将在 jevoisbase 内部创建新模块。
 
-- We will first create a new component to compute surprise, which will use Saliency as a sub-component. While not
-  strictly necessary, creating a component for our surprise detector will allow others to easily build new modules that
-  can do other things triggered by surprise.
+- 我们首先将创建一个新组件来计算意外，该组件将使用 Saliency 作为子组件。虽然不是绝对必要的，但为我们的意外检测器创建一个组件将允许其他人轻松构建新模块，这些模块可以执行由意外触发的其他操作。
 
-- Then we will create a new module for our surprise-based video recorder.
+- 然后我们将为基于意外的视频录像机创建一个新的模块。
 
-\note Because the result of this tutorial is expected to be useful to many, the source code has been committed into
-jevoisbase, and hence all the code for this tutorial is already in jevoisbase. However, this tutorial was written while
-that code was developed and before it was committed, to make sure that all the steps are detailed and explained.
+\note 由于本教程的结果预计对许多人有用，源代码已提交到 jevoisbase，因此本教程的所有代码都已在 jevoisbase 中。但是，本教程是在开发该代码时和提交之前编写的，以确保所有步骤都详细且有解释。
 
 
-Surprise component
+意外部分 
 ------------------
 
 <ul>
 
-<li>We first create a new component and name it Surprise. Because it is closely related to \ref Saliency, we will just
-place it in <b>jevoisbase/include/jevoisbase/Components/Saliency/</b> (for the .H file) and
-<b>jevoisbase/src/Components/Saliency/</b> (for the .C file), together with the Saliency component. We need \b
-Surprise.H and \b Surprise.C here so that users of our component will just include \b Surprise.H in their own components
-or modules. By placing the source under <b>jevoisbase/src/Components/</b> we ensure that the jevoisbase build rules
-(CMake) will automatically detect it and compile it into \b Surprise.o, which will also automatically be linked into the
-\b libjevoisbase.so library that contains all the components of jevoisbase. This is the result of the following line in
-the \b CMakeLists.txt of jevoisbase:
+<li>我们首先创建一个新组件并将其命名为 Surprise。由于它与 \ref Saliency 密切相关，我们将把它放在 <b>jevoisbase/include/jevoisbase/Components/Saliency/</b>（用于 .H 文件）和 <b>jevoisbase/src/Components/Saliency/</b>（用于 .C 文件）中，与 Saliency 组件一起。我们在这里需要 \b Surprise.H 和 \b Surprise.C ，以便我们组件的用户只需在自己的组件或模块中包含 \b Surprise.H 。通过将源代码放在 <b>jevoisbase/src/Components/</b> 下，我们确保 jevoisbase 构建规则 (CMake) 将自动检测它并将其编译成 \b Surprise.o ，它也将自动链接到包含 jevoisbase 所有组件的 \b libjevoisbase.so 库中。这是 jevoisbase 的 \b CMakeLists.txt 中以下行的结果：
 
 \verbatim
 jevois_setup_library(src/Components jevoisbase 1.0)
 \endverbatim
 
-which instructs CMake to build a new library called \b libjevoisbase.so from all the source files under
-<b>src/Components/</b> (recursively).
-</li>
+它指示 CMake 从 <b>src/Components/</b> 下的所有源文件（递归）构建一个名为 \b libjevoisbase.so 的新库。 </li>
 
-<li>We start \b Surprise.H with two statements:
+<li>我们用两个语句启动 \b Surprise.H ：
 \code
 #pragma once
 
 #include <jevoisbase/Components/Saliency/Saliency.H>
 \endcode
 
-The first one tells the compiler to not include this file again if it was already included, thereby simplifying how
-people will use our component (they will not get errors about duplicate definitions if somehow \b Surprise.H ends up
-being included twice, maybe because it is used by two higher-level components that are both used in an even higher-level
-component). The second one will allow us to use the \ref Saliency component in our component. Because \ref Saliency
-already is a Component, including \b Saliency.H will automatically pull in the whole Component, Parameter, etc machinery
-of JeVois and hence no further include statement is needed here for now.
+第一个命令告诉编译器如果该文件已经包含则不要再次包含，从而简化人们使用我们组件的方式（如果 \b Surprise.H 以某种方式被包含两次，他们不会收到有关重复定义的错误，可能是因为它被两个更高级别的组件使用，而这两个组件都用于一个更高级别的组件）。第二个命令允许我们在我们的组件中使用 \ref Saliency 组件。因为 \ref Saliency 已经是一个组件，所以包含 \b Saliency.H 将自动引入 JeVois 的整个组件、参数等机制，因此现在这里不需要进一步的包含语句。
 
-<li>We then declare a new class \b Surprise that derives from \ref jevois::Component. We do not place it into any
-namespace since all of jevoisbase is just in the global namespace (it is end-user code). In the documentation for the
-new component, we make sure to include a statement:
+<li>然后我们声明一个新类 \b Surprise ，它派生自 \ref jevois::Component 。我们没有将它放入任何命名空间，因为所有 jevoisbase 都位于全局命名空间中（它是最终用户代码）。在新组件的文档中，我们确保包含以下语句：
 
 \verbatim
 \ingroup components
-\endverbatim
-so that our component gets listed under all the components of jevoisbase in the online documentation of jevoisbase.
+\endverbatim 
+这样我们的组件就会在 jevoisbase 在线文档中列在 jevoisbase 的所有组件下列出。
 
-We thus start like this:
+因此，我们这样开始：
 \code
-//! Compute Itti & Baldi surprise over video frames
-/*! This component detects surprising events in video frames using Itti & Baldi's Bayesian theory of surprise.
+//! 计算视频帧上的 Itti & Baldi 意外
+/*! 该组件使用 Itti & Baldi 的贝叶斯意外理论检测视频帧中的意外事件。
 
     [more doc ...]
 
@@ -170,26 +109,19 @@ class Surprise : public jevois::Component
     //! Virtual destructor for safe inheritance
     ~Surprise();
 };
-\endcode
+\endcode 
 </li>
 
-<li>Note how our new component \b Surprise does not derive from \b Saliency, but rather derives directly from \ref
-jevois::Component. Indeed, in the JeVois framework, we use composition to create hierarchies of components as opposed to
-using inheritance. This is to avoid possibly ambiguous inheritance chains with respect to parameters (remember that
-JeVois components inherit from all of their parameters, as explained in \ref parameter). Thus, \b Surprise will instead
-contain a \b Saliency sub-component.
+<li>请注意，我们的新组件 \b Surprise 并非继承 \b Saliency ，而是直接继承 \ref jevois::Component 。事实上，在 JeVois 框架中，我们使用组合来创建组件层次结构，而不是使用继承。这是为了避免可能与参数相关的模糊继承链（请记住，JeVois 组件从其所有参数继承，如 \ref parameter 中所述）。因此，\b Surprise 将包含一个 \b Saliency 子组件。
 
-Although lookup functions are provided by \ref jevois::Component to find sub-components by name, it is usually a good
-idea to maintain a redundant but more direct handle to the sub-components which we will often use. Hence, we add the
-following to our class:
+尽管 \ref jevois::Component 提供了查找函数来按名称查找子组件，但通常最好保留一个冗余但更直接的子组件句柄，以便我们经常使用。因此，我们在类中添加以下内容：
 
 \code
   protected:
     std::shared_ptr<Saliency> itsSaliency;
 \endcode
 
-and we initialize it in our constructor, while the destructor does nothing for now. Thus \b Surprise.C looks like this
-now:
+我们在构造函数中初始化它，而析构函数现在什么也不做。因此 \b Surprise.C 现在看起来像这样：
 
 \code
 Surprise::Surprise(std::string const & instance) :
@@ -203,47 +135,34 @@ Surprise::~Surprise()
 
 \endcode
 
-Note how all the parameters of \b Saliency (for scales, weights of the different features, etc) are now exposed and
-accessible to users of \b Surprise, with no work required from us thanks to the JeVois Component and Parameter
-framework. This is a big leap forward compared to using functions with many parameters as done, e.g., in OpenCV, which
-would require us here to manually expose and forward all these parameters. See the doc of \ref jevois::Component and
-[Parameter in JeVois](/doc/classjevois_1_1Parameter_3_01Param_00_01Tail_8_8_8_4.html) for more explanations.  </li>
 
-<li>Let us run a
+请注意，由于有了 JeVois 组件和参数框架，\b Saliency 的所有参数（用于尺度、不同特征的权重等）现在都已公开并可供 \b Surprise 用户访问，我们无需做任何工作。与使用具有许多参数的函数（例如在 OpenCV 中）相比，这是一个巨大的飞跃，OpenCV 需要我们在这里手动公开和转发所有这些参数。有关更多说明，请参阅 \ref jevois::Component 和 [JeVois 中的参数](/doc/classjevois_1_1Parameter_3_01Param_00_01Tail_8_8_8_4.html) 的文档。 </li>
+
+<li>让我们运行 
 \verbatim
 ./rebuild-host.sh
 \endverbatim
 
-now from inside <b>~/jevoisbase</b> to make sure that CMake detects our new files
-<b>src/Components/Saliency/Surprise.H</b> and <b>src/Components/Saliency/Surprise.C</b> and compiles them. 
+现在从 <b>~/jevoisbase</b> 内部确保 CMake 检测到我们的新文件 <b>src/Components/Saliency/Surprise.H</b> 和 <b>src/Components/Saliency/Surprise.C</b> 并编译它们。
 
-We only need to do this full rebuild once to update the CMake cache. Later, as we continue to develop our component, we
-can just change directory to \b hbuild and simply type \c make to re-compile only what we have changed and not the whole
-\b jevoisbase.
+我们只需进行一次完全重建即可更新 CMake 缓存。稍后，当我们继续开发组件时，我们只需将目录更改为 \b hbuild ，然后简单地键入 \c make 即可重新编译我们更改的内容，而不是整个 \b jevoisbase 。
 
-We will first fully develop and build our new component for \b host, which is easier and faster than cross-compiling for
-the JeVois ARM processor. Once everything works well on the host computer, we will move on to cross-compiling for
-platform hardware.
-</li>
+我们将首先为 \b host 全面开发和构建我们的新组件，这比为 JeVois ARM 处理器进行交叉编译更简单、更快捷。一旦主机上一切运行良好，我们将继续为平台硬件进行交叉编译。</li>
 
 
-<li>Now for the actual work: Here we want a single function that will take a video frame in and will return a surprise
-value, which will be the value of the most surprising location in the video frame. It will first compute saliency and
-feature maps using our \ref Saliency sub-component, and will the compute surprise on those maps. We model or processing
-function to match one of the functions in \ref Saliency since we will directly pass our received video frame to \ref
-Saliency. Thus, we declare a new member function in \b Surprise.H:
+<li>现在开始实际工作：这里我们需要一个函数，该函数将接收视频帧并返回一个意外值，该意外值将是视频帧中最令人意外的位置的值。它将首先使用我们的 \ref Saliency 子组件计算显着性和特征图，然后在这些图上计算意外。我们建模或处理函数以匹配 \ref Saliency 中的函数之一，因为我们将直接将接收到的视频帧传递给 \ref Saliency 。因此，我们在 \b Surprise.H 中声明一个新的成员函数：
 
 \code
-    //! Compute surprise from a YUYV video frame and return the surprise value in wows
+    //! 从 YUYV 视频帧计算意外并返回意外值 wows
     double process(jevois::RawImage const & input);
 \endcode
 
-and we implement it in \b Surprise.C:
+我们在 \b Surprise.C 中实现了它：
 
 \code
 double Surprise::process(jevois::RawImage const & input)
 {
-  // Compute feature maps and saliency maps, no gist. Results are stored in the Saliency class:
+  // 计算特征图和显著性图，无要点。结果存储在 Saliency 类中：
   itsSaliency->process(input, false);
 
   // Compute surprise over the maps:
@@ -256,65 +175,38 @@ double Surprise::process(jevois::RawImage const & input)
 }
 \endcode
 
-Note how Saliency::process() could throw if something goes wrong. Here, we do not worry about it since we have not
-allocated any resource that could be leaked if we were to exit through an exception. See \ref ModuleTips for more info.
+注意，如果出现错误，Saliency::process() 可能会抛出异常。在这里，我们不必担心，因为我们没有分配任何资源，如果我们通过异常退出，这些资源可能会泄漏。有关更多信息，请参阅 \ref ModuleTips 。
 
-Typing \c make in <b>~/jevoisbase/hbuild/</b> still compiles fine at this point.
-</li>
+此时在 <b>~/jevoisbase/hbuild/</b> 中输入 \c make 仍可以正常编译。 </li>
 
-<li>Following Itti & Baldi, 2009, here we will assume Poisson data (spikes from neurons representing the feature values)
-and we will hence naturally use a Gamma conjugate prior. Under these conditions, surprise can be computed in closed form
-(see Itti & Baldi, 2009). The Gamma distribution has two parameters, alpha and beta - these will basically capture, at
-each pixel in each feature map, our beliefs about how this feature pixel usually looks like. We will here update this
-belief over time, each time a new video frame is received. If a given video frame yields a big update, we will conclude
-that something surprising just happened.
+<li>根据 Itti & Baldi, 2009 的说法，我们在此假设泊松数据（来自代表特征值的神经元的尖峰 spikes from neurons representing the feature values），因此我们自然会使用 Gamma 共轭先验。在这些条件下，可以以封闭形式计算意外（参见 Itti & Baldi, 2009）。Gamma 分布有两个参数，alpha 和 beta - 它们基本上会在每个特征图中的每个像素处捕获我们对此特征像素通常看起来如何的信念。每次收到新的视频帧时，我们都会在此随时间更新此信念。如果给定的视频帧产生重大更新，我们将得出结论，刚刚发生了一些令人意外的事情。
 
-To compute surprise over the salmap, intens, color, ori, flicker, and motion maps that are inside the \ref Saliency
-component, we will need to store two corresponding arrays: one for the prior alpha, and one for the prior beta for each
-pixel of each map. We will then update those arrays, pixel-by-pixel, treating the maps from \ref Saliency as new data
-observations, and assuming that the single value received from the Saliency component represents the mean of a
-Poisson-distributed spike train. Our prior alpha and beta arrays will then become posterior alpha and beta arrays
-through Bayesian update using the data, and we will compute surprise from the KL divergence between prior and
-posterior. Note (see paper for details) that our choice of a Gamma prior guarantees that, after an update using Poisson
-data, the posterior is also Gamma (i.e., Gamma is the conjugate prior for Poisson). We will then transfer the posterior
-arrays for the current frame into the prior arrays stored in our class for the next frame.
+为了计算 \ref Saliency 组件内的 salmap、intens、color、ori、flicker 和 motion 图的 surprise，我们需要存储两个相应的数组：一个用于先验 alpha，一个用于每个图的每个像素的先验 beta。然后，我们将逐个像素地更新这些数组，将 \ref Saliency 中的图视为新的数据观测值，并假设从 Saliency 组件收到的单个值代表泊松分布脉冲序列的平均值。然后，我们的先验 alpha 和 beta 数组将通过使用数据的贝叶斯更新变为后验 alpha 和 beta 数组，我们将根据先验和后验之间的 KL 散度计算 surprise。请注意（详情请参阅论文），我们选择 Gamma 先验可确保在使用泊松数据更新后，后验也是 Gamma（即 Gamma 是泊松的共轭先验）。然后，我们将当前帧的后验数组转移到我们类中存储的下一帧的先验数组中。
 
-Here we will just compute surprise independently for each pixel in each feature map. Thus, the 2D structure of the
-saliency feature maps will not be exploited. We need \b float or \b double values for alpha and beta to accurately
-compute surprise, let us use float here. Thus, we could possibly just use <b>std::array<float></b> to store alpha and
-beta maps as 1D arrays, except for one detail: we do not know the feature map sizes until the first video frame has
-been processed through saliency.
+这里我们将为每个特征图中的每个像素独立计算意外。因此，不会利用显著性特征图的 2D 结构。我们需要 \b float 或 \b double 值来准确计算意外，让我们在这里使用浮点数。因此，我们可能只使用 <b>std::array<float></b> 将 alpha 和 beta 图存储为 1D 数组，但有一个细节除外：在第一个视频帧通过显著性处理之前，我们不知道特征图的大小。
 
-So we need dynamically-sized arrays and can we just use <b>std::vector<float></b>. This is preferred to just using a raw
-C array because the memory will be automatically freed by the vector destructor when our component is destroyed, thus we
-do not have to worry about freeing it, about exceptions, memory leaks, etc by using <b>std::vector<float></b> as opposed
-the using raw <b>float *</b> and \c new and \c delete.
+因此我们需要动态大小的数组，我们能否只使用 <b>std::vector<float></b>。这比只使用原始 C 数组更好，因为当我们的组件被销毁时，vector 析构函数会自动释放内存，因此使用 <b>std::vector<float></b> 时，我们不必担心释放内存、异常、内存泄漏等问题，而使用原始 <b>float *</b> 和 \c new 和 \c delete 则不行。
 
-One final thing to note is that the map of origin will also not be important for surprise computation here, we will just
-compute surprise independently for every pixel of every map. So we can just concatenate all the pixels of all maps into
-a single vector of data, and likewise for alpha and beta. We hence add the following data members to our class under
-the \b protected section:
+最后要注意的一点是，map 原点对于此处的意外计算也不重要，我们将为每个 map 的每个像素独立计算意外。因此，我们可以将所有 map 的所有像素连接成一个数据向量，alpha 和 beta 也是如此。因此，我们在 \b protected 部分下将以下数据成员添加到我们的类中：
 
 \code
     std::vector<float> itsAlpha, itsBeta;
 \endcode
 
-Yes, we could have used a vector of pairs, or created an auxiliary (alpha, beta) struct as well, but access is
-probably faster with our 2 vectors. We start fleshing out our <b>process()</b> function as follows:
-
+是的，我们可以使用成对的向量，或者创建一个辅助 auxiliary (alpha, beta) 结构，但使用 2 个向量访问速度可能更快。我们开始充实我们的 <b>process()</b> 函数，如下所示：
 
 \code
 float Surprise::process(jevois::RawImage const & input)
 {
-  float const updatefac = 0.95F; // surprise update factor on each video frame
+  float const updatefac = 0.95F; // 每个视频帧上的意外更新因子
 
-  // Compute feature maps and saliency maps, no gist. Results are stored in the Saliency class:
+  // 计算特征图和显著性图，无要点 gist。结果存储在 Saliency 类中：
   itsSaliency->process(input, false);
 
   // Compute surprise over the maps:
   float surprise = 0.0F;
 
-  // Aggregate our data values from all maps. These maps are small, no need to parallelize:
+  // 从所有 map 中聚合我们的数据值。这些 map 很小，无需并行化：
   std::vector<float> data;
   intg32 * pix = itsSaliency->salmap.pixels; size_t siz = env_img_size(&itsSaliency->salmap);
   for (size_t i = 0; i < siz; ++i) data.push_back(pix[i]);
@@ -334,9 +226,9 @@ float Surprise::process(jevois::RawImage const & input)
   pix = itsSaliency->motion.pixels; siz = env_img_size(&itsSaliency->motion);
   for (size_t i = 0; i < siz; ++i) data.push_back(pix[i]);
 
-  // Initialize the prior if this is our first frame, or frame size or map size just changed somehow. We initialize
-  // alpha and beta as in the SurpriseModelSP of the iLab Neuromorphic C++ Vision Toolkit, from which this
-  // implementation is derived. Also see Itti & Baldi, Vis Res, 2009, for details:
+  // 如果这是我们的第一帧，或者帧大小或 map 大小以某种方式发生了变化，则初始化先验。我们像 
+  // iLab Neuromorphic C++ Vision Toolkit 的 SurpriseModelSP 一样初始化 alpha 和 beta，此实现源自该工具包。有关详细
+  // 信息，另请参阅 Itti & Baldi，Vis Res，2009：
   if (itsAlpha.size() != data.size())
   {
     itsAlpha.clear(); itsBeta.clear();
@@ -354,15 +246,9 @@ float Surprise::process(jevois::RawImage const & input)
 \endcode
 </li>
 
-<li>At this point we realize two things: 1) the update factor \b updatefac could be a Parameter of our component; 2) how
-about also computing surprise on the gist vector, while we are at it, if the users want it? Let us add these two
-features. First a parameter for \b updatefac:
+<li>此时我们意识到两件事：1) 更新因子 \b updatefac 可以作为我们组件的一个参数；2) 如果用户需要，我们是否可以同时计算 gist 向量上的意外？让我们添加这两个功能。首先是 \b updatefac 的一个参数：
 
-In \b Saliency.H, we create a namespace \b surprise that we will use for our parameters. This is to avoid clashes among
-different components that could be used jointly in a given higher-level component (some other component may also have a
-parameter named \b updatefac). Convention here is to use the lowercase version of the class name as namespace name for
-its parameters. We create a parameter category so all our parameters will be grouped together when users type \c help,
-and note the \b \\relates directive to instruct doxygen to relate the parameter to our class in the online documentation:
+在 \b Saliency.H 中，我们创建了一个命名空间 \b surprise ，用于存放参数。这是为了避免在给定的高级组件中可能联合使用的不同组件之间发生冲突（其他组件也可能有一个名为 \b updatefac 的参数）。这里的惯例是使用类名的小写版本作为其参数的命名空间名称。我们创建一个参数类别，这样当用户输入 \c help 时，所有参数都将分组在一起，请注意 \b \\relates 指令指示 doxygen 将参数与在线文档中的类相关联：
 
 \code
 namespace surprise
@@ -378,24 +264,15 @@ namespace surprise
 }
 \endcode
 
-Remember that the format of \c JEVOIS_DECLARE_PARAMETER() is:
+请记住，\c JEVOIS_DECLARE_PARAMETER() 的格式为：
 + parameter name
 + parameter type
 + description
 + default value
-+ optional: specification of valid values; here we specified a valid range for \b updatefac and nothing for \b dogist.
-+ category for grouping in the help message.
++ 可选：有效值的指定；这里我们为 \b updatefac 指定了一个有效范围，而为 \b dogist 未指定任何内容。
++ 帮助消息中的分组类别。
 
-We then add these two parameters to our Component:
-
-\code
-class Surprise : public jevois::Component,
-                 public jevois::Parameter<surprise::updatefac, surprise::dogist>
-{
-  //...
-\endcode
-
-and we use them in our process function:
+然后我们将这两个参数添加到我们的组件中：
 
 \code
 float Surprise::process(jevois::RawImage const & input)
@@ -412,15 +289,30 @@ float Surprise::process(jevois::RawImage const & input)
   // ...
 \endcode
 
-That's it. These parameters will now appear in the \c help message, users will able to set and get their values, and
-every component or module that includes our Surprise component as a sub-component will also expose them!
-
-Note, however, that doing a \c get() on a parameter is slightly heavier than just getting the value of a variable,
-because parameters are thread-safe, and hence a mutex must be locked during the get(). Hence, instead of calling \c
-updatefac::get() for each data element, we can here pre-compute our divider beforehand:
+我们在 process 函数中使用它们：
 
 \code
-  float const ufac = updatefac::get(); // get() is somewhat expensive (requires mutex lock), so cache it here.
+float Surprise::process(jevois::RawImage const & input)
+{
+  // delete: float const updatefac = 0.95F; // surprise update factor on each video frame
+
+  // ...
+  itsSaliency->process(input, dogist::get());
+
+  // ...
+      itsAlpha.push_back(d / (1.0F - updatefac::get()));
+      itsBeta.push_back(1.0F / (1.0F - updatefac::get()));
+
+  // ...
+\endcode
+
+
+就是这样。这些参数现在将出现在 \c help 消息中，用户将能够设置和获取它们的值，并且每个包含我们的 Surprise 组件作为子组件的组件或模块也将公开它们！
+
+但请注意，对参数执行 \c get() 比仅获取变量的值稍微繁重一些，因为参数是线程安全的，因此在 get() 期间必须锁定互斥锁。因此，我们可以预先计算 divider，而不是为每个数据元素调用 \c updatefac::get()：
+
+\code
+  float const ufac = updatefac::get(); // get() 有点昂贵（需要互斥锁），因此在此处缓存。
   float const initfac = 1.0F / (1.0F - ufac);
  
   // ...
@@ -436,7 +328,7 @@ updatefac::get() for each data element, we can here pre-compute our divider befo
   }
 \endcode
 
-We update our function to concatenate the gist vector to the data:
+我们更新函数以将要点向量与数据连接起来：
 
 \code
   // ...
@@ -450,47 +342,42 @@ We update our function to concatenate the gist vector to the data:
   }
 \endcode
 
-A quick \c make and all still compiles fine. No need to mess around with cross-compilers, microSD cards, etc at this
-point thanks to the simultaneous host/platform development environment of JeVois.
+快速 \c make ，所有仍然编译良好。由于 JeVois 的同步主机/平台开发环境，此时无需摆弄交叉编译器、microSD 卡等。
 </li>
 
-<li>All right, so we just need to compute surprise, we do here as in the SurpriseModelSP of the iLab Neuromorphic C++
-Vision Toolkit, from which our implementation here is derived. Also see Itti & Baldi, Vis Res, 2009, for details:
+<li>好的，所以我们只需要计算意外，我们在这里按照 iLab Neuromorphic C++ Vision Toolkit 的 SurpriseModelSP 进行操作，我们的实现就是从中衍生出来的。另请参阅 Itti & Baldi，Vis Res，2009，了解详细信息：
 
 \code
   size_t const datasiz = data.size(); // final data size
 
-  // Compute posterior and KL, independently for every entry in our vectors. Here we assume Poisson data and a Gamma
-  // conjugate prior, as in Itti & Baldi, Vision Research, 2009:
+  // 为向量中的每个条目独立计算后验和 KL。这里我们假设泊松数据和 Gamma 共轭先验，如 Itti & Baldi, Vision Research, 2009
+  // 中所述：
   for (size_t i = 0; i < datasiz; ++i)
   {
-    // First, decay alpha and beta. Make sure alpha does not decay all the way to 0:
+    // 首先，衰减 alpha 和 beta。确保 alpha 不会一直衰减到 0：
     float alpha = itsAlpha[i] * ufac, beta = itsBeta[i] * ufac;
     if (alpha < 1.0e-5F) alpha = 1.0e-5F;
 
-    // Compute the posterior:
+    // 计算后验 posterior:
     float const newAlpha = alpha + val;
     float const newBeta  = beta  + 1.0F;
 
-    // Surprise is KL(new || old). Keep track of the max value found over the data array:
+    // Surprise 是 KL(new || old)。跟踪在数据数组中找到的最大值：
     double const s = std::abs(KLgamma<double>(newAlpha, newBeta, alpha, beta, true));
     if (s > surprise) surprise = s;
     
-    // The posterior becomes our new prior for the next video frame:
+    // 后验成为下一个视频帧的新先验：
     itsAlpha[i] = newAlpha; itsBeta[i] = newBeta;
   }
 
-  // Return max number of wows found over the whole data array:
+  // 返回在整个数据数组中找到的最大意外数量：
   return surprise;
 \endcode
 
-We just need to implement the helper function \c KLgamma() and we are done. This is the closed-form solution for
-surprise on a Gamma prior. It ends up using hundreds of lines of code of no interest here. We just rip that code from
-the Itti & Baldi implementation.
+我们只需要实现辅助函数 \c KLgamma() 就大功告成了。这是 Gamma 先验上的意外的闭式解决方案。它最终使用了数百行不感兴趣的代码。我们只是从 Itti & Baldi 实现中撕下该代码。
 </li>
 
-<li>One last improvement before we are done with our component: instead of just a boolean \p dogist, how about allowing
-users to choose which channels or combinations they like. We replace \p dogist by:
+<li>在完成组件之前，我们还有最后一个改进：除了布尔值 \p dogist ，如何让用户选择他们喜欢的频道或组合？我们将 \p dogist 替换为：
 
 \code
   //! Parameter \relates Surprise
@@ -500,19 +387,17 @@ users to choose which channels or combinations they like. We replace \p dogist b
                            "SCIOFMG", boost::regex("^[SCIOFMG]+$"), ParamCateg);
 \endcode
 
-The regex specification of valid values specifies that we want a string composed exclusively of the allowed letters, and
-with at least one letter. We modify the class parameter list to use this parameter instead of \p dogist, and we modify
-the \c process() function:
+正则表达式的有效值规范规定，我们需要一个仅由允许的字母组成且至少包含一个字母的字符串。我们修改类参数列表以使用此参数代替 \p dogist，并修改 \c process() 函数：
 
 \code
 float Surprise::process(jevois::RawImage const & input)
 {
   std::string const chans = channels::get();
 
-  // Compute feature maps and saliency maps, possibly gist. Results are stored in the Saliency class:
+  // 计算特征图和显著性图，可能是要点。结果存储在 Saliency 类中：
   itsSaliency->process(input, (chans.find('G') != chans.npos));
 
-  // Aggregate our data values from all maps. These maps are small, no need to parallelize:
+  // 从所有 map 中聚合数据值。这些 map 很小，无需并行化：
   std::vector<float> data; std::string done;
 
   for (char c : chans)
@@ -535,10 +420,10 @@ float Surprise::process(jevois::RawImage const & input)
       for (size_t i = 0; i < itsSaliency->gist_size; ++i) data.push_back(g[i]);
       continue;
     }
-    default: continue; // should never happen given our regex spec for the parameter
+    default: continue; // 考虑到我们对参数的正则表达式规范，这种情况永远不会发生
     }
 
-    // Concatenate the data if it was not gist:
+    // 如果数据不是要点，则连接数据：
     for (size_t i = 0; i < siz; ++i) data.push_back(pix[i]);
   }
 
@@ -548,41 +433,34 @@ float Surprise::process(jevois::RawImage const & input)
 
 </ul>
 
-We are done with the Surprise component. Final code is in Surprise.H and Surprise.C of jevoisbase and should be pretty
-close to what we have developed above, except for small optimizations introduced after this tutorial was written. The
-details of \c KLgamma() are also in there.
+我们已经完成了 Surprise 组件。最终代码位于 jevoisbase 的 Surprise.H 和 Surprise.C 中，除了在本教程编写后引入的一些小优化外，应该与我们上面开发的非常接近。\c KLgamma() 的详细信息也在其中。
 
-SurpriseRecorder module
+SurpriseRecorder 模块 
 -----------------------
 
-We are now ready to develop a new module, which we will call \b SurpriseRecorder. It will compute surprise and record to
-microSD small video snippets around each detected surprising event.
+我们现在准备开发一个新模块，我们将其称为 \b SurpriseRecorder 。它将计算意外事件并将检测到的每个意外事件的小视频片段记录到 microSD 中。
 
-To get started, we:
+首先，我们：
 
 <ul>
 
-<li>Create a directory <b>jevoisbase/src/Modules/SurpriseRecorder</b> and start a file
-<b>jevoisbase/src/Modules/SurpriseRecorder/SurpriseRecorder.C</b>
+<li>创建目录 <b>jevoisbase/src/Modules/Sur​​priseRecorder</b> 并开始文件 <b>jevoisbase/src/Modules/Sur​​priseRecorder/SurpriseRecorder.C </b>
 
-Since modules are terminal entities (nobody will use-them as subs), we usually develop them in Java-style, i.e., in a
-single .C file that contains declarations and implementation.
+由于模块是终端实体（没有人会将它们用作子实体），我们通常以 Java 风格开发它们，即在单个 .C 文件中包含声明和实现。
 </li>
 
-<li>Our module will use the Surprise component, so we pull it in. We also include \b Module.H from jevois:
+<li>我们的模块将使用 Surprise 组件，因此我们将其引入。我们还包含来自 jevois 的 \b Module.H ：
 \code
 #include <jevois/Core/Module.H>
 #include <jevoisbase/Components/Saliency/Surprise.H>
-\endcode
+\endcode 
 </li>
 
-<li>We start our class as a JeVois Module. We fill in custom doxygen tags that will be used to generate the module's
-documentation page (see \ref ProgrammerSDK).
+<li>我们以 JeVois 模块的形式开始我们的类。我们填写自定义 doxygen 标签，这些标签将用于生成模块的文档页面（参见 \ref ProgrammerSDK ）。
 
 \code
 //! Surprise-based recording of events
-/*! This module detects surprising events in the live video feed from the camera, and records short video clips of each
-    detected event.
+/*! 该模块检测来自摄像机的实时视频源中的意外事件，并记录每个检测到的事件的短视频片段。
 
     @author Laurent Itti
 
@@ -604,18 +482,11 @@ class SurpriseRecorder : public jevois::Module
   // ...
 \endcode
 
-Note how for now we are aiming to only support modes with no video out over USB. That is, this module is mainly geared
-towards standalone operation: one lets it run for a day, then one checks out the video snippets that were recorded on
-the microSD. No live output is needed. Thus, we will override the \c process() function of jevois::Module that only
-takes an input frame in (and no output frame). The jevois::Engine will call this function for each new video frame from
-the camera sensor.  </li>
+请注意，目前我们的目标是仅支持没有通过 USB 输出视频的模式。也就是说，该模块主要面向独立操作：让它运行一天，然后检查在 microSD 上录制的视频片段。不需要实时输出。因此，我们将覆盖 jevois::Module 的 \c process() 函数，该函数仅接受输入帧（而不接受输出帧）。jevois::Engine 将为来自相机传感器的每个新视频帧调用此函数。</li>
 
-<li>At some point, also remember to add an icon file, maybe some screenshots, etc to your module, as explained in
-\ref ProgrammerSDK</li>
+<li>有时，还要记得向模块中添加图标文件、一些屏幕截图等，如 \ref ProgrammerSDK 中所述</li>
 
-<li>We get going with constructor and destructor and a skeleton for the \c process() function. Our module will use a
-Surprise sub-component. We do not forget to register the module with the JeVois framework so it can be loaded at runtime
-into the JeVois engine (see last line and the \ref JEVOIS_REGISTER_MODULE() macro):
+<li>我们开始使用构造函数和析构函数以及 \c process() 函数的框架。我们的模块将使用 Surprise 子组件。我们不会忘记使用 JeVois 框架注册模块，以便可以在运行时将其加载到 JeVois 引擎中（请参阅最后一行和 \ref JEVOIS_REGISTER_MODULE() 宏）：
 
 \code
 class SurpriseRecorder : public jevois::Module
@@ -648,22 +519,17 @@ class SurpriseRecorder : public jevois::Module
 // Allow the module to be loaded as a shared object (.so) file:
 JEVOIS_REGISTER_MODULE(SurpriseRecorder);
 \endcode
-</li>
+ </li>
 
-<li>Let's try to compile. Like with our Component before, the first time we add the new file, we need to re-run CMake,
-by simply running a full:
+<li>让我们尝试编译。与之前的组件一样，第一次添加新文件时，我们需要重新运行 CMake，只需运行完整的命令即可：
 
 \verbatim
 ./rebuild-host.sh
 \endverbatim
 
-The rebuild script will detect the new module under <b>jevoisbase/src/Modules/</b> and will add it to the list of
-modules to build. Later, as we keep editing our module file, we can just type \c make from within the \b hbuild
-directory.
-</li>
+重建脚本将检测 <b>jevoisbase/src/Modules/</b> 下的新模块并将其添加到要构建的模块列表中。稍后，当我们继续编辑模块文件时，我们只需在 \b hbuild 目录中键入 \c make 即可。 </li>
 
-<li>Let's add a few parameters. Because modules are terminal entities, we do not need to place them in a namespace. We
-take inspiration from the \ref SaveVideo module:
+<li>让我们添加一些参数。因为模块是终端实体，所以我们不需要将它们放在命名空间中。我们从 \ref SaveVideo 模块中汲取灵感：
 
 \code
 static jevois::ParameterCategory const ParamCateg("Surprise Recording Options");
@@ -702,64 +568,35 @@ JEVOIS_DECLARE_PARAMETER(ctxframes, unsigned int, "Number of context video frame
                          150, ParamCateg);
 \endcode
 
-and we add them to our module class:
+
+并将它们添加到我们的模块类中：
 
 \code
 class SurpriseRecorder : public jevois::Module,
                          public jevois::Parameter<filename, fourcc, fps, thresh, ctxframes>
 {
  // ...
-\endcode
+\endcode 
 </li>
 
-<li>Now let's see how we will record the frames. We will use an approach similar to what was done in SaveVideo. But,
-because of our desire to also save context frames before and after each surprising event, the overall logic here will be
-sufficiently different. Thus, while one could at first think of splitting off the video saving aspect of the SaveVideo
-module into a Component that could then be shared, here we will not attempt this because of the differences introduced
-by the context. Recording context is important for humans reviewing the surprising events, as some events may be
-surprising only for a few frames and would thus be very difficult to watch without a few extra seconds of context before
-and after the event.
+<li>现在让我们看看如何记录帧。我们将使用与 SaveVideo 中类似的方法。但是，由于我们希望在每个意外事件之前和之后也保存上下文帧，因此这里的整体逻辑将有很大不同。因此，虽然人们一开始可能会想到将 SaveVideo 模块的视频保存方面拆分为一个可以共享的组件，但由于上下文引入的差异，我们不会在这里尝试这样做。记录上下文对于回顾意外事件的人来说很重要，因为有些事件可能只对几帧造成意外，因此如果没有事件前后几秒钟的额外上下文，观看起来会非常困难。
 
-We will use the following basic plan of attack:
+我们将采用以下基本攻击计划：
 
-- We will start a thread to actually encode and save videos. This is because video encoding and writing files to microSD
-  can have unpredictable timing. Thus, by using a separate thread for this task, we can ensure that our main thread will
-  keep running at full camera rate and will not drop frames even if the disk caches are getting flushed or some frame
-  takes a long time to compress.
+- 我们将启动一个线程来实际编码和保存视频。这是因为视频编码和将文件写入 microSD 的时间可能不可预测。因此，通过使用单独的线程执行此任务，我们可以确保主线程将保持以全速相机运行，并且即使磁盘缓存被刷新或某些帧需要很长时间才能压缩，也不会丢帧。
 
-- Thus, we will need to launch a thread. We will do that during the init() of our module. For convenience, our thread
-  will run a member function of our class so that all our member variables, parameters, etc are also accessible to the
-  thread.
+- 因此，我们需要启动一个线程。我们将在模块的 init() 期间执行此操作。为方便起见，我们的线程将运行我们类的成员函数，以便线程也可以访问我们所有的成员变量、参数等。
 
-- So, in \c process() we will compute surprise and decide whether the current frame should be saved.
+- 因此，在 \c process() 中我们将计算意外并决定是否应该保存当前帧。
 
-- We need a thread-safe way to communicate frames from \c process() running in the main thread to our video compression
-  and saving thread. We will use jevois::BounderBuffer<T> which was developed for this kind of purpose. BoundedBuffer is
-  a thread-safe producer-consumer queue. Our \c process() function will push frames into it, and our video writing
-  thread will pop frames from it.
+- 我们需要一种线程安全的方式将帧从在主线程中运行的 \c process() 传送到我们的视频压缩和保存线程。我们将使用为此目的开发的 jevois::BounderBuffer<T> 。BoundedBuffer 是一个线程安全的生产者-消费者队列。我们的 \c process() 函数会将帧推送到其中，而我们的视频写入线程会从中弹出帧。
 
-- We need a way to tell our thread to stop, when our module gets destroyed. We will use an std::atomic<bool> for
-  that. Also, because our BoundedBuffer will be used in blocking mode, our thread will typically be blocked on trying to
-  pop() the next frame by the time we want to quit. So we adopt the convention that an empty frame pushed into the
-  buffer will be a signal that the current video is finished. The writer thread will then close the file and also check
-  whether it is time to quit.
+- 当我们的模块被销毁时，我们需要一种方法来告诉我们的线程停止。我们将使用 std::atomic<bool> 来实现这一点。此外，由于我们的 BoundedBuffer 将以阻塞模式使用，因此当我们想要退出时，我们的线程通常会在尝试 pop() 下一帧时被阻塞。因此，我们采用惯例，将空帧推入缓冲区将表示当前视频已完成。然后，写入线程将关闭文件并检查是否该退出了。
 
-- Finally, we need to handle the context frames and details like several surprising events occurring within the context
-  time period, which should then be merged (e.g., if users want 10 seconds of context and two surprising events occur
-  spaced by only 7 seconds, we should end up with a single video that starts 10 seconds before the start of the first
-  event and ends 10 seconds after the end of the second event). We will thus keep the last \p ctxframes in another,
-  non-thread-safe, queue to be used by the main thread only, so that they are ready to provide the context before a
-  surprising event whenever that event is encountered. When a surprising event starts, we will transfer all these frames
-  to our BoundedBuffer, unless we are already saving a previous event. An \c std::deque<cv::Mat> should work great for
-  that, we will call it \b itsCtxBuf. Note that, because cv::Mat is only a thin wrapper around pixel data, pushing a
-  cv::Mat into a queue or transferring a bunch of cv::Mat from one queue to another will not copy the pixel data, just
-  the shared pointers to it that are in cv::Mat. So it is cheap to move these images around.
+- 最后，我们需要处理上下文帧和细节，例如在上下文时间段内发生的几个意外事件，然后应将它们合并（例如，如果用户想要 10 秒的上下文，并且两个意外事件仅相隔 7 秒，那么我们最终应该得到一个视频，该视频在第一个事件开始前 10 秒开始，在第二个事件结束后 10 秒结束）。因此，我们将最后的 \p ctxframes 保存在另一个非线程安全的队列中，仅供主线程使用，以便它们随时准备在遇到意外事件时提供该事件之前的上下文。当意外事件开始时，我们会将所有这些帧传输到我们的 BoundedBuffer，除非我们已经保存了前一个事件。\c std::deque<cv::Mat> 应该非常适合，我们将其称为 \b itsCtxBuf 。请注意，由于 cv::Mat 只是像素数据的薄包装器，因此将 cv::Mat 推送到队列或将一堆 cv::Mat 从一个队列传输到另一个队列不会复制像素数据，只会复制 cv::Mat 中指向它的共享指针。因此移动这些图像的成本很低。
 
 
-Let's start with starting and stopping our thread. We override jevois::Component::postInit() to start it, because we
-want to access the parameter that contains the number of context frames as we start. This parameter will not be set yet
-at construction time, but will be ready by the time postInit() is run. Thus, likewise, we override
-jevois::Component::postUninit() to stop it.
+让我们从启动和停止线程开始。我们重写 jevois::Component::postInit() 来启动它，因为我们想要在启动时访问包含上下文框架数量的参数。此参数在构造时尚未设置，但在运行 postInit() 时将准备就绪。因此，同样，我们重写 jevois::Component::postUninit() 来停止它。
 
 \code
     // ####################################################################################################
@@ -812,7 +649,8 @@ jevois::Component::postUninit() to stop it.
     std::string itsFilename; //!< Currenf video file name
 \endcode
 
-We also initialize some of our synchronization variables in the constructor:
+
+我们还在构造函数中初始化一些同步变量：
 
 \code
     SurpriseRecorder(std::string const & instance) : jevois::Module(instance), itsBuf(1000), itsToSave(0),
@@ -822,7 +660,7 @@ We also initialize some of our synchronization variables in the constructor:
     }
 \endcode
 
-and we need to know about BoundedBuffer and a bunch of other things we will use in \c run() and \c process():
+我们还需要了解 BoundedBuffer 以及我们将在 \c run() 和 \c process() 中使用的一些其他东西：
 
 \code
 #include <jevois/Types/BoundedBuffer.H>
@@ -833,12 +671,10 @@ and we need to know about BoundedBuffer and a bunch of other things we will use 
 #include <fstream>
 \endcode
 
-Typing a quick \c make in \b hbuild compiles with no errors or warnings.
-</li>
+在 \b hbuild 中快速输入 \c make 进行编译，不会出现任何错误或警告。 </li>
 
 
-<li>Let's now flesh out our \c process() function: We just convert frames to cv::Mat and push them into our buffer, and
-we also compute surprise. We will do both in parallel by using an async thread for the surprise computation:
+<li>现在让我们充实我们的 \c process() 函数：我们只需将帧转换为 cv::Mat 并将它们推送到我们的缓冲区中，然后计算意外。我们将使用异步线程并行执行这两项操作以进行意外计算：
 
 \code
     void process(jevois::InputFrame && inframe) override
@@ -904,9 +740,7 @@ we also compute surprise. We will do both in parallel by using an async thread f
 \endcode
 
 
-And finally our \c run() thread. As it turns out, we end up using it unmodified from that of SaveVideo. So, actually, we
-could benefit in splitting off this video saving machinery into a Component that would be used both by SaveVideo and
-SurpriseRecorder. We will leave that for future work:
+最后是我们的 \c run() 线程。事实证明，我们最终使用它时没有对 SaveVideo 进行任何修改。因此，实际上，我们可以将这个视频保存机制拆分成一个组件，供 SaveVideo 和 SurpriseRecorder 使用。我们将把它留到以后再做：
 
 
 \code
@@ -975,10 +809,10 @@ SurpriseRecorder. We will leave that for future work:
     }
 \endcode
 
+
 </li>
 
-<li>One last thing: because we so far have no idea of what surprise values to expect, let us show them on each frame. We
-add a simple \c LINFO() message as follows:
+<li>最后一件事：因为我们目前还不知道会有什么意外值，所以让我们在每一帧上显示它们。我们添加一个简单的 \c LINFO() 消息，如下所示：
 
 \code
       // Wait until our surprise thread is done:
@@ -987,41 +821,36 @@ add a simple \c LINFO() message as follows:
 \endcode
 
 
-A quick \c make and all compiles. Type a <code>sudo make install</code> to install your compiled module into the
-<b>/jevois/</b> directory on your host computer. Time to test!
+快速 \c make 并全部编译。输入 <code>sudo make install</code> 将编译后的模块安装到主机上的 <b>/jevois/</b> 目录中。测试时间到了！
 
 </li>
 
 </ul>
 
-Test run on the host computer
+在主机上测试运行 
 -----------------------------
 
-Let us first try our new module on the host computer. We will use YUYV 640x480 \@ 15 fps.
+让我们首先在主机上试用我们的新模块。我们将使用 YUYV 640x480 \@ 15 fps。
 
-To provide video input, let us use our JeVois camera, configured in "dumb camera mode": We add a video mapping on our
-microSD that allows it to just output YUYV 640x480 \@ 15 fps using the PassThrough module (no processing on
-JeVois). Then we will run \c jevois-daemon on our host, grab that format of video, and process it on the host:
+为了提供视频输入，让我们使用配置为 "dumb camera mode" 的 JeVois 相机：我们在 microSD 上添加视频映射，使其仅使用 PassThrough 模块输出 YUYV 640x480 \@ 15 fps（JeVois 上不进行处理）。然后我们将在主机上运行 \c jevois-daemon ，获取该格式的视频，并在主机上处理它：
 
-<ul>
-<li>Add this line to <b>JEVOIS:/config/videomappings.cfg</b> on the microSD of your JeVois camera:
+<ul> 
+<li>将此行添加到 JeVois 相机的 microSD 上的 <b>JEVOIS:/config/videomappings.cfg</b> 中：
 \verbatim
 YUYV 640 480 15.0 YUYV 640 480 15.0 JeVois PassThrough
 \endverbatim
 
-Your JeVois camera can now operate as a dumb camera in that mode. Alternatively, you could also here use a regular
-webcam to provide inputs, as long as it supports this format.  </li>
+您的 JeVois 相机现在可以在该模式下作为哑相机运行。或者，您也可以使用常规网络摄像头提供输入，只要它支持此格式即可。</li>
 
-<li>Connect your JeVois camera to your host computer and allow it to boot up.</li>
+<li>将您的 JeVois 相机连接到主机并允许其启动。</li>
 
-<li>On the host, make sure that you have write permission to <b>/jevois/data/</b>, then type
+<li>在主机上，确保您对 <b>/jevois/data/</b> 具有写入权限，然后键入
 \verbatim
 jevois-daemon
 \endverbatim
-to run the JeVois processing on your host processor. It will likely start DemoSaliency as default processing module. 
-</li>
+以在主机处理器上运行 JeVois 处理。它可能会启动 DemoSaliency 作为默认处理模块。</li>
 
-<li>To switch to our new module, type this into the terminal in which you launched \c jevois-daemon:
+<li>要切换到我们的新模块，请在启动 \c jevois-daemon 的终端中输入以下内容：
 
 \verbatim
 streamoff
@@ -1031,7 +860,7 @@ streamon
 \endverbatim
 
 
-Your terminal should show these lines:
+你的终端应该显示以下几行：
 
 \verbatim
 streamoff
@@ -1063,16 +892,13 @@ INF SurpriseRecorder::process: surprise = 5.33606e+06 itsToSave = 150
 [...]
 \endverbatim
 
-Those values are very large. First. wave your hand in front of the camera and check out the values. We get values above
-1e7 wows (10 megawows). So let us set the threshold there:
+这些值非常大。首先，在摄像头前挥挥手，看看这些值。我们得到的值高于 1e7 wows（10 megawows）。所以让我们在那里设置阈值：
 
 \verbatim
 setpar thresh 1e7
 \endverbatim
 
-Now, after 10 seconds, you should see messages about the video file being closed. Wave your hand and a new file will
-open. That \c LINFO() is getting annoying now, so remove it from the module, re-compile, and run it again, type this
-after you launch \c jevois-daemon:
+现在，10 秒后，您应该会看到有关视频文件已关闭的消息。挥挥手，就会打开一个新文件。\c LINFO() 现在变得很烦人，因此请将其从模块中删除，重新编译并再次运行，在启动 \c jevois-daemon 后输入以下内容：
 
 \verbatim
 streamoff
@@ -1083,47 +909,35 @@ setpar channels S
 streamon
 \endverbatim
 
-Now, keep your camera still and looking at nothing that moves. Note how one event may get recorded at the start, this is
-because the first few frames are surprising (we believe, due to some initial gain control on the camera as capture
-starts), and then rapidly get boring and recording stops.
+现在，保持相机静止，不要看任何移动的东西。请注意，一个事件可能在开始时就被记录下来，这是因为前几帧令人意外（我们认为，这是由于在开始捕捉时相机上的一些初始增益控制），然后迅速变得无聊并停止记录。
 
-Each time you wave your hand in front of the camera, you should see it save to a new file. 10 seconds after you stop
-waving, saving stops.
+每次在摄像头前挥手时，您都应该看到它将保存到一个新文件中。停止挥手 10 秒后，保存停止。
 
-Use \c mplayer or similar to play the videos that are getting written to
-<b>/jevois/data/surpriserecorder/video*</b>. Each one should start with 10 seconds of nothing then your waving hand then
-10 seconds of nothing.
+使用 \c mplayer 或类似程序播放写入 <b>/jevois/data/surpriserecorder/video*</b> 的视频。每个视频都应以 10 秒的空白开始，然后是挥手，再是 10 秒的空白。
 
 </li>
 
 </ul>
 
-Profiling to determine how fast this can run
+通过 Profiling 来确定运行速度 
 --------------------------------------------
 
-The JeVois framework provides convenient jevois::Timer and jevois::Profiler classes to help you measure how much time it
-takes to do things on each frame. This will help us decide what standard videomapping we should suggest for our surprise
-recorder. Both classes operate in the same way:
+JeVois 框架提供了方便的 jevois::Timer 和 jevois::Profiler 类，可帮助您测量每帧执行操作所需的时间。这将帮助我们决定应该为我们的意外录像机建议什么标准的视频映射。这两个类的操作方式相同：
 
-- on every frame, you should issue a \c start() on the timer or profiler object to indicate start of frame (start of \c
-  process() function)
-- with the profiler, issue \c checkpoint() commands at various checkpoints in your \c process() function
-- at the end of process, issue a \c stop() command
+- 在每一帧上，您都应在 timer 或 profiler 对象上发出 \c start() 来指示帧的开始（\c process() 函数的开始）
+- 使用 profiler，在 \c process() 函数中的各个检查点发出 \c checkpoint() 命令
+- 在进程结束时，发出 \c stop() 命令
 
-The timer and profiler classes will accumulate average statistics over 100 frames and will display those once in a
-while. We do not display on every frame as this could slow us down too much, especially if sending those reports over
-serial port.
+timer and profiler 类将累计 100 帧的平均统计数据，并会不时显示这些数据。我们不会在每一帧上都显示这些数据，因为这会减慢我们的速度，尤其是通过串行端口发送这些报告时。
 
-Let us first include the profiler declarations so we can use it:
+让我们首先包含 profiler 声明以便我们可以使用它：
 
 \code
 #include <jevois/Debug/Profiler.H>
 \endcode
 
 
-Let us instrument our \c process() function with a jevois::Profiler as follows. The new lines below all have the word \b
-prof in them, look for it, and we also added some
-<code>////////////////////////////////////////////////////////</code> markers to help:
+让我们使用 jevois::Profiler 来检测我们的 \c process() 函数，如下所示。下面的新行都包含单词 \b prof ，请查找它，我们还添加了一些 <code>////////////////////////////////////////////////////////////</code> 标记来提供帮助：
 
 
 \code
@@ -1202,7 +1016,8 @@ prof in them, look for it, and we also added some
     }
 \endcode
 
-Now, every 100 frames, you will see something like this:
+
+现在，每 100 帧，你将看到类似这样的内容：
 
 \verbatim
 INF Profiler::stop: surpriserecorder overall average (100) duration 15.4445ms [11.2414ms .. 22.1041ms] (64.7478 fps)
@@ -1211,22 +1026,18 @@ INF Profiler::stop: surpriserecorder - image pushed average (100) delta duration
 INF Profiler::stop: surpriserecorder - surprise done average (100) delta duration 14.4426ms [10.6092ms .. 20.9499ms] (69.2396 fps)
 \endverbatim
 
-The overall average is the time from \c start() to \c stop(). The others are for checkpoints and they report the time
-between start to first checkpoint, then from first to second checkpoint, etc. Durations displayed will depend on how
-fast your host computer is.
+总体平均值是从 \c start() 到 \c stop() 的时间。其他的是检查点，它们报告从开始到第一个检查点的时间，然后从第一个检查点到第二个检查点的时间，等等。显示的持续时间取决于主机的速度。
 
-On the host this is not very useful, so let us run this puppy on the JeVois camera now that everything seems to be
-working well.
+在主机上这不是很有用，所以现在一切似乎都运行良好，让我们在 JeVois 相机上运行这个 puppy。
 
-Compiling and installing to JeVois smart camera
+编译并安装到 JeVois 智能相机 
 -----------------------------------------------
 
-We basically follow the standard compilation instructions (see \ref FlashingToSD).
+我们基本上遵循标准编译说明（参见\ref FlashingToSD ）。
 
 <ul>
 
-<li> Here we will first do a full cross-recompilation of everything for the JeVois platform hardware, but that may not
-always be necessary.
+<li> 在这里，我们将首先对 JeVois 平台硬件的所有内容进行完整的交叉重新编译，但这可能并不总是必要的。
 
 \verbatim
 cd ~/jevois && ./rebuild-platform.sh
@@ -1234,15 +1045,12 @@ cd ~/jevoisbase && ./rebuild-platform.sh --microsd
 sudo jevois-flash-card -y /dev/sdX
 \endverbatim
 
-Make sure that you replace \b sdX above by the device of your microSD.
-</li>
+确保将上面的 \b sdX 替换为您的 microSD 设备。</li>
 
 
-<li>Once the microSD card is written, insert it into your JeVois camera, connect the camera to a host computer, and let
-it boot. Do not start a video capture software.</li>
+<li>写入 microSD 卡后，将其插入 JeVois 相机，将相机连接到主机，然后启动。请勿启动视频捕获软件。</li>
 
-<li>Connect to JeVois through a serial terminal (see \ref UserCli) using the serial-over-USB connection to JeVois. Then
-issue the following commands:
+<li>通过串行终端（参见 \ref UserCli ）使用串行 USB 连接连接到 JeVois。然后发出以下命令：
 
 \verbatim
 help
@@ -1255,7 +1063,7 @@ setpar channels S
 streamon
 \endverbatim
 
-You should see these messages every few seconds:
+每隔几秒您就会看到这些消息：
 \verbatim
 INF Profiler::stop: surpriserecorder overall average (100) duration 68.4739ms [63.6285ms .. 83.3681ms] (14.6041 fps)
 INF Profiler::stop: surpriserecorder - surprise launched average (100) delta duration 114.16us [102.125us .. 200.25us] (8759.64 fps)
@@ -1263,7 +1071,7 @@ INF Profiler::stop: surpriserecorder - image pushed average (100) delta duration
 INF Profiler::stop: surpriserecorder - surprise done average (100) delta duration 64.4076ms [59.4994ms .. 79.3229ms] (15.5261 fps)
 \endverbatim
 
-Now wave in front of the camera and you should get some
+现在在摄像机前挥手，你应该会得到一些 
 \verbatim
 SAVETO /jevois/data/surpriserecorder/video000000.avi
 SAVEDNUM 100
@@ -1272,67 +1080,54 @@ SAVEDNUM 200
 SAVEDONE /jevois/data/surpriserecorder/video000000.avi
 \endverbatim
 
-After you are done recording a bunch of events, unplug JeVois, get the microSD out, connect it to your host, and check
-out the videos that were saved to it!
+录制完一系列事件后，拔下 JeVois，取出 microSD，将其连接到主机，然后查看保存到其中的视频！
 
-From the profiler, looks like our guess that we would be able to do 15fps at 640x480 was pretty good (see the overall
-average reports).
+从分析器来看，我们猜测能够在 640x480 下实现 15fps 的效果似乎相当不错（参见总体平均报告）。
 
 </li>
 
 </ul>
 
-Fine-tuning your algorithms using canned data
----------------------------------------------
+使用预存数据微调你的算法 
+----------------------------------------------
 
-Sometimes, it is useful to be able to run an algorithm on a pre-recorded video sequence to fine-tune it. Here, for
-example, we might want to tune the threshold, update factor, channels, of the algorithm in a systematic manner using
-always the same data. The JeVois framework allows for this, simply by specifying a video file as \p cameradev when
-starting \c jevois-daemon (see \ref JeVoisDaemon).
+有时，能够在预先录制的视频序列上运行算法来对其进行微调是很有用的。例如，我们可能希望使用始终相同的数据以系统的方式调整算法的阈值、更新因子、通道。JeVois 框架允许这样做，只需在启动 \c jevois-daemon 时将视频文件指定为 \p cameradev（参见 \ref JeVoisDaemon ）。
 
-Here, we will use an hour-long 320x240 video that was posted live on the web several years ago as part of the now
-defunct blueservo project. These cameras were recording live outdoors video near the border between Texas and Mexico,
-and citizens were asked to watch those and to call the sheriff if they saw anything suspect.
+在这里，我们将使用一段长达一小时的 320x240 视频，该视频是几年前作为现已停用的 blueservo 项目的一部分在网上实时发布的。这些摄像机正在德克萨斯州和墨西哥边境附近录制户外实时视频，并要求公民观看这些视频，如果发现任何可疑情况，请立即报警。
 
-We will run out tests on the host. The same could work on JeVois.
+我们将在主机上进行测试。同样可以在 JeVois 上进行测试。
 
-<ul>
-<li>First, download the test video from http://jevois.org/data/blueservo23_66.asf
+<ul> <li>首先，从 http://jevois.org/data/blueservo23_66.asf 下载测试视频
 
-Check out this video and see how it is non trivial to process, due to:
-+ noisy camera input.
-+ clouds moving in the sky cast different kinds of large moving shadows over time (pay the movie in fast forward to see
-  this).
-+ foliage moving in the wind, occasional ripples on the river.
+观看此视频，了解处理过程为何如此困难，因为：
++ 摄像机输入噪声。
++ 天空中移动的云会随时间投射出不同类型的大型移动阴影（快进观看影片即可看到）。
++ 树叶在风中摇曳，河面上偶尔泛起涟漪。
 
 
 \youtube{aSKncW7Jxrs}
 
-Yes, this video is <em>very boring for a whole hour!</em> But it does contain a few short interesting events as we will
-see below.
+是的，这段视频<em>整整一个小时都很无聊！</em>但它确实包含一些简短有趣的事件，正如我们将在下面看到的。
 
 </li>
 
-<li>Then, create a new entry in your host's <b>/jevois/config/videomapping.cfg</b> so we can start with our surprise
-recorder module right away:
+<li>然后，在主机的 <b>/jevois/config/videomapping.cfg</b> 中创建一个新条目，以便我们可以立即开始使用我们的意外录音机模块：
 
 \verbatim
 NONE 0 0 0.0 YUYV 320 240 70.0 JeVois SurpriseRecorder
 \endverbatim
 
-Or, with \jvversion{1.3} and later, you can just type, in a Linux terminal:
+或者，使用 \jvversion{1.3} 及更高版本，您只需在 Linux 终端中输入：
 \verbatim
 sudo jevois-add-videomapping NONE 0 0 0.0 YUYV 320 240 70.0 JeVois SurpriseRecorder
 \endverbatim
 
 
-Here we assume that your host is fast enough to run our surprise module at 70fps at 320x240.
-</li>
+这里我们假设您的主机足够快，可以以 70fps 和 320x240 的速度运行我们的意外模块。</li>
 
-<li>Run \c jevois-daemon on your host (with a camera connected) and type \c listmappings and note the mapping number
-assigned to the one you just created. For us, the number was 0.</li>
+<li>在主机上运行 \c jevois-daemon （连接摄像头），然后输入 \c listmappings ，并记下分配给您刚刚创建的映射的映射编号。对于我们来说，该编号为 0。</li>
 
-<li>Now edit <b>/jevois/config/initscript.cfg</b>:
+<li>现在编辑 <b>/jevois/config/initscript.cfg</b>：
 \verbatim
 setmapping 0
 setpar serout All
@@ -1341,25 +1136,21 @@ setpar ctxframes 75
 setpar channels S
 \endverbatim
 
-Note how we are using a high threshold so we get very few events. We also decreased the context to +/- 5 seconds (75
-frames). For now, we also only compute surprise over the saliency map, and not over the gist or the other feature
-maps. This is subject to more experimentation.
+请注意，我们使用了高阈值，因此我们得到的事件非常少。我们还将上下文减少到 +/- 5 秒（75 帧）。目前，我们还只计算显着性图上的意外，而不是要点或其他特征图上的意外。这需要更多的实验。
 
 </li>
 
-<li>Finally, run
+<li>最后，运行
 
 \verbatim
 jevois-daemon --cameradev=blueservo23_66.asf
 \endverbatim
 
-and let it go though it. Watch the events that were extracted from this hour-long video.
+并让它过去。观看从这段长达一小时的视频中提取的事件。
 
-\note Currently, when using video files as input, we loop over the input forever (to simulate a never-ending live
-feed). So, check for repeated saved clips and then just interrupt \c jevois-daemon for now. This could be changed in the
-JeVois core some day.
+\note 目前，当使用视频文件作为输入时，我们会无限循环输入（以模拟永无止境的实时馈送）。因此，请检查重复保存的剪辑，然后暂时中断 \c jevois-daemon 。将来某一天，JeVois 核心可能会改变这一点。
 
-Here are the results:
+结果如下：
 
 \youtube{zIslIsHBfYw}
 
@@ -1370,31 +1161,25 @@ Here are the results:
 </ul>
 
 
-Additional activities
+其他活动 
 ---------------------
 
-You could add the following to this module:
+您可以向该模块添加以下内容：
 
-- play with the parameters some more: the update factor, the channels, the Saliency parameters, etc. and come up with
-  better default values.
+- 进一步调整参数：更新因子、通道、显著性参数等，并得出更好的默认值。
 
-- draw the location that was most surprising (with our remapping of everything into a 1D data array, this might be
-  tricky).
+- 绘制最令人意外的位置（将所有内容重新映射到一维数据数组中，这可能会很棘手）。
 
-- add a \c process() function with video output, maybe showing the most surprising location and a bar-graph plotting its
-  surprise and the current surprise threshold.
+- 添加带有视频输出的 \c process() 函数，可能显示最令人意外的位置以及绘制其意外程度和当前意外阈值的条形图。
 
-- save the time of the event. Note that JeVois does not have a real-time clock. It always initializes to December 31,
-  1979 or something like that when it boots. In future versions of the JeVois core, we may add a command to allow one to
-  set the time from the host computer, so that the time stamps of the recorded video files are veridical.
+- 保存事件的时间。请注意，JeVois 没有实时时钟。它在启动时总是初始化为 1979 年 12 月 31 日或类似的时间。在 JeVois 核心的未来版本中，我们可能会添加一个命令，允许从主机设置时间，以便录制的视频文件的时间戳是真实的。
 
-- In Itti & Baldi, 2009, we actually computed surprise in two ways: over space, and over time. In this tutorial, we only
-  did over time. You could add spatial surprise as well.
+- 在 Itti & Baldi, 2009 中，我们实际上以两种方式计算意外：随空间变化和随时间变化。在本教程中，我们只随时间变化。您也可以添加空间意外。
 
-- Likewise, in Itti & Baldi, 2009, we computed surprise at 5 different time scales while here we only use one. This
-  could be added too.
+- 同样，在 Itti & Baldi, 2009 中，我们计算了 5 个不同时间尺度的意外，而这里我们只使用了一个。这也可以添加。
 
-- Some optimizations about what should be computed as float vs double could make the actual surprise computation faster.
+- 对于应以浮点数还是双精度数进行计算的一些优化可以使实际的意外计算更快。
 
 
 */
+

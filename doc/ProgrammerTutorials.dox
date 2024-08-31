@@ -1,18 +1,13 @@
-/*! \page ProgrammerTutorials JeVois programmer tutorials
+/*! \page ProgrammerTutorials JeVois 程序员教程
 
-Programmer tutorials cover programming on C++-17 under a Linux development environment to enhance the functionality
-of the JeVois smart camera, for example by vreating new machine vision modules that will run on the smart camera, or
-by modifying the core JeVois framework.
+程序员教程涵盖在 Linux 开发环境下使用 C++-17 进行编程以增强 JeVois 智能相机的功能，例如通过创建将在智能相机上运行的新机器视觉模块，或通过修改核心 JeVois 框架。
 
-Make sure you check out the basic [programmer tutorials in the base JeVois doc](/doc/ModuleTutorial.html) for some
-conceptual understanding and overview of capabilities.
+请务必查看基本 [基础 JeVois 文档中的程序员教程](/doc/ModuleTutorial.html)，以获得一些概念性理解和功能概述。
 
-Many example machine vision modules are provided with the standard JeVois software distribution. Below we list pointers
-to a few of them. You can run them and then check out their source code to learn how the desired functionality was
-achieved.
+标准 JeVois 软件发行版提供了许多示例机器视觉模块。下面我们列出了其中一些模块的指针。您可以运行它们，然后查看它们的源代码以了解如何实现所需的功能。
 
-Programming JeVois machine vision modules using Python and JeVois Inventor or JeVois-Pro GUI
-============================================================================================
+使用 Python 和 JeVois Inventor 或 JeVois-Pro GUI 编程 JeVois 机器视觉模块 
+======================================================================================================
 
 - \subpage ProgrammerInvHello
 - \subpage ProgrammerInvTimer
@@ -21,27 +16,26 @@ Programming JeVois machine vision modules using Python and JeVois Inventor or Je
 - \subpage ProgrammerInvOCR
 - \subpage ProgrammerInvFlowLK
 
-Programming JeVois machine vision modules using Python
-======================================================
+使用 Python 编程 JeVois 机器视觉模块 
+==========================================================
 
 - \subpage ProgrammerPythonLive
 - \subpage ProgrammerPythonSaveImages
 - \subpage ProgrammerPythonDice
-- \jvmod{PythonTest}, \jvmod{PythonOpenCV}, \jvmod{PythonSandbox} - minimal test modules
-- \jvpro \jvmod{AprilTag} - detect markers using the apriltag library for python
-- \jvmod{FirstPython}, \jvmod{PythonObject6D} - detect objects of interest to FIRST Robotics Competitions
-- \jvmod{PyClassificationDNN} - run object classification deep nets in OpenCV
-- \jvmod{PyDetectionDNN} - run object detection deep nets in OpenCV
-- \jvpro \jvmod{PyCoralClassify}, \jvmod{PyCoralDetect}, \jvmod{PyCoralSegment} - minimal Coral EdgeTPU examples
-- \jvmod{PyEmotion} - facial emotion recognition using a deep network
-- \jvpro \jvmod{PyFaceMesh}, \jvmod{PyHandDetector}, \jvmod{PyObjectron}, \jvmod{PyPoseDetector}, \jvmod{PySelfie} -
-  example Mediapipe applications
-- \jvpro \jvmod{PyLicensePlate} - detect license plates using YuNet on NPU via Tim-VX
-- \jvmod{PythonParallel} - parallel threads in python
-- \jvpro \jvmod{PyLLM} - run large language models in JeVois-Pro
+- \jvmod{PythonTest}、\jvmod{PythonOpenCV}、\jvmod{PythonSandbox} - 最小测试模块
+- \jvpro \jvmod{AprilTag} - 使用 Python 的 apriltag 库检测标记
+- \jvmod{FirstPython}、\jvmod{PythonObject6D} - 检测 FIRST 机器人竞赛感兴趣的对象
+- \jvmod{PyClassificationDNN} - 在 OpenCV 中运行对象分类深度网络
+- \jvmod{PyDetectionDNN} - 在 OpenCV 中运行对象检测深度网络
+- \jvpro \jvmod{PyCoralClassify}、\jvmod{PyCoralDetect}、\jvmod{PyCoralSegment} - 最小 Coral EdgeTPU 示例
+- \jvmod{PyEmotion} - 使用深度网络进行面部情绪识别
+- \jvpro \jvmod{PyFaceMesh}、\jvmod{PyHandDetector}、\jvmod{PyObjectron}、\jvmod{PyPoseDetector}、\jvmod{PySelfie} - Mediapipe 应用程序示例
+- \jvpro \jvmod{PyLicensePlate} - 通过 Tim-VX 在 NPU 上使用 YuNet 检测车牌
+- \jvmod{PythonParallel} - Python 中的并行线程
+- \jvpro \jvmod{PyLLM} - 在 JeVois-Pro 中运行大型语言模型
 
-Programming JeVois machine vision modules using C++
-===================================================
+使用 C++ 编程 JeVois 机器视觉模块 
+=======================================================
 
 - \subpage ProgrammerVbox
 - \subpage ProgrammerSetup
@@ -49,30 +43,31 @@ Programming JeVois machine vision modules using C++
 - \subpage ProgrammerDice
 - \subpage ProgrammerDlib
 - \subpage ProgrammerSurprise
-- \jvmod{ArUcoBlob} - detect ArUco or AprilTag markers and color blobs in parallel threads
-- \jvmod{CalibrateCamera} - calibrate you camera for 3D pose estimation
-- \jvmod{ColorFiltering} - apply various color filters to live video
-- \jvmod{CustomDNN} - customize the JeVois DNN framework
-- \jvmod{DNN} - framework to run deep neural networks on CPU or Coral TPU, Intel Myriad-X, JeVois-Pro NPU, Hailo-8
-- \jvmod{DemoARtoolkit} - detect markers using the ARtoolkit 5 library
-- \jvmod{DemoArUco} - detect ArUco markers using OpenCV
-- \jvmod{DemoBackgroundSubtract} - detect moving objects using background subtraction
-- \jva33 \jvmod{DemoCPUGPU} - run machine vision tasks on CPU and GPU in parallel
-- \jva33 \jvmod{DemoDMP} - how to use the digital motion processor in the optional ICM-20948 9-axis inertial sensor
-- \jvmod{DemoIMU} - how to get raw inertial data from ICM-20948
-- \jvmod{DemoNeon} - how to use streaming NEON processor instructions
-- \jvmod{DemoQRcode} - detect and decode barcodes and QR codes
-- \jvmod{DenseSIFT} - compute SIFT keypoints on a grid
-- \jvmod{EdgeDetection} and \jvmod{EdgeDetectionX4} - simple image filtering
-- \jvmod{FirstVision} - detect objects of interest to FIRST Robotics Competitions
-- \jvmod{MarkersCombo} - detect ArUco, ARtoolkit, and QR-code markers in parallel threads
-- \jvmod{MultiDNN} - run several deep networks in parallel with tiled displays
-- \jvmod{MultiDNN2} - run several deep networks in parallel with all outputs on one display
-- \jvmod{ObjectDetect} - simple object detection using keypoint matching
-- \jvmod{ObjectTracker} - track color objects
-- \jvmod{OpticalFlow} - very fast optical flow (motion detection)
-- \jvmod{RoadNavigation} - detect road boundaries and direction of vanishing point
-- \jvmod{SaliencyGist} - compute a saliency map and gist of the scene
-- \jvmod{TensorFlowEasy}, \jvmod{TensorFlowSaliency}, \jvmod{TensorFlowSingle} - invoke TensorFlow models directly
+- \jvmod{ArUcoBlob} - 在并行线程中检测 ArUco 或 AprilTag 标记和颜色斑点
+- \jvmod{CalibrateCamera} - 校准相机以进行 3D 姿势估计
+- \jvmod{ColorFiltering} - 将各种颜色滤镜应用于实时视频
+- \jvmod{CustomDNN} - 自定义 JeVois DNN 框架
+- \jvmod{DNN} - 在 CPU 或 Coral TPU、Intel Myriad-X、JeVois-Pro NPU、Hailo-8 上运行深度神经网络的框架
+- \jvmod{DemoARtoolkit} - 使用 ARtoolkit 5 库检测标记
+- \jvmod{DemoArUco} - 使用 OpenCV 检测 ArUco 标记
+- \jvmod{DemoBackgroundSubtract} - 使用背景减法检测移动物体
+- \jva33 \jvmod{DemoCPUGPU} - 在 CPU 和 GPU 上并行运行机器视觉任务
+- \jva33 \jvmod{DemoDMP} - 如何使用可选 ICM-20948 9 轴惯性传感器中的数字运动处理器
+- \jvmod{DemoIMU} - 如何从 ICM-20948 获取原始惯性数据
+- \jvmod{DemoNeon} - 如何使用流式 NEON 处理器指令
+- \jvmod{DemoQRcode} - 检测和解码条形码和二维码
+- \jvmod{DenseSIFT} - 在网格上计算 SIFT 关键点
+- \jvmod{EdgeDetection} 和\jvmod{EdgeDetectionX4} - 简单的图像过滤
+- \jvmod{FirstVision} - 检测 FIRST 机器人竞赛感兴趣的对象
+- \jvmod{MarkersCombo} - 在并行线程中检测 ArUco、ARtoolkit 和 QR 码标记
+- \jvmod{MultiDNN} - 使用平铺显示并行运行多个深度网络
+- \jvmod{MultiDNN2} - 使用一个显示器上的所有输出并行运行多个深度网络
+- \jvmod{ObjectDetect} - 使用关键点匹配进行简单的对象检测
+- \jvmod{ObjectTracker} - 跟踪彩色对象
+- \jvmod{OpticalFlow} - 非常快速的光流（运动检测）
+- \jvmod{RoadNavigation} - 检测道路边界和消失点的方向
+- \jvmod{SaliencyGist} - 计算场景的显着图和要点
+- \jvmod{TensorFlowEasy}、\jvmod{TensorFlowSaliency}、\jvmod{TensorFlowSingle} - 直接调用 TensorFlow 模型
 
 */
+

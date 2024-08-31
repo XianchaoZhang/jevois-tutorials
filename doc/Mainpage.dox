@@ -1,29 +1,23 @@
-/*! \mainpage JeVois Smart Embedded Machine Vision Toolkit - Tutorials
+/*! \mainpage JeVois 智能嵌入式机器视觉工具包 - 教程
 
-\section welcometut Welcome to the tutorials for the JeVois Smart Embedded Machine Vision Toolkit.
+\section welcometut 欢迎来到 JeVois 智能嵌入式机器视觉工具包教程。
 
-This documentation present tutorials on how to use and program the JeVois smart camera.
+该文档提供了有关如何使用和编程 JeVois 智能相机的教程。
 
-For more information about the JeVois framework, see the [JeVois Documentation](http://jevois.org/doc/).
+有关 JeVois 框架的更多信息，请参阅 [JeVois 文档](http://jevois.org/doc/)。
 
-For more information about the JeVois machine vision modules, see the [JeVoisBase
-Documentation](http://jevois.org/basedoc/).
+有关 JeVois 机器视觉模块的更多信息，请参阅 [JeVoisBase 文档](http://jevois.org/basedoc/)。
 
-New users, be sure to check out [JeVois Start](/start/).
+新用户请务必查看 [JeVois Start](/start/)。
 
-\section contentstut Table of contents
+\section contenttut 目录
 
-If you are not yet familiar with JeVois, see the documentation for [JeVois](http://jevois.org/doc/) first.
+如果您还不熟悉 JeVois，请先参阅 [JeVois](http://jevois.org/doc/) 的文档。
 
-- \subpage UserTutorials - tutorials for users of existing JeVois machine vision algorithms. In these tutorials, we
-  only use JeVois algorithms as provided by the standard distribution and the quick install microSD images. Explore
-  these tutorials first as they can run with an out-of-the-box JeVois smart camera. We do program the host computer that
-  is connected to JeVois in various ways, though.
+- \subpage UserTutorials - 现有 JeVois 机器视觉算法用户的教程。在这些教程中，我们仅使用标准发行版和快速安装 microSD 映像提供的 JeVois 算法。首先探索这些教程，因为它们可以与开箱即用的 JeVois 智能相机一起运行。不过，我们确实以各种方式对连接到 JeVois 的主机进行编程。
 
 
-- \subpage ProgrammerTutorials - tutorials for those who wish to program new machine vision modules for JeVois. In these
-  tutorials, we develop new Components and Modules that add new machine vision algorithms to JeVois. This requires
-  installing them to a microSD card for testing on the JeVois smart camera.
+- \subpage ProgrammerTutorials - 为那些希望为 JeVois 编写新机器视觉模块的人提供的教程。在这些教程中，我们开发了新的组件和模块，为 JeVois 添加新的机器视觉算法。这需要将它们安装到 microSD 卡上，以便在 JeVois 智能相机上进行测试。
 
 */
 

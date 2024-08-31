@@ -1,42 +1,35 @@
-/*! \page ProgrammerInvOCR Reading text with OpenCV and Tesseract
+/*! \page ProgrammerInvOCR 使用 OpenCV 和 Tesseract 读取文本
 
-This tutorial develops a simplistic module that leverages optical character recognition (OCR) as supported by JeVois
-through OpenCV and the Tesseract library, which is available through the OpenCV Text module (including from Python).
+本教程开发了一个简单的模块，该模块利用 JeVois 通过 OpenCV 和 Tesseract 库支持的光学字符识别 (OCR)，可通过 OpenCV Text 模块（包括 Python）获得。
 
-Approach
---------
+方法
+-----
 
-- We need to understand how to perform character recognition in OpenCV using Tesseract as a backend.
+- 我们需要了解如何使用 Tesseract 作为后端在 OpenCV 中执行字符识别。
 
-- We will grab an image from the camera sensor, read text in it, and display the decoded text in a small area below the
-  captured image. To achieve that, we will create a composite output display as in \ref ProgrammerInvComposite
+- 我们将从相机传感器抓取图像，读取其中的文本，并在捕获图像下方的一小块区域中显示解码后的文本。为此，我们将创建一个复合输出显示，如 \ref ProgrammerInvComposite 中所示
 
-Creating the module
+创建模块
 -------------------
 
-- Select <b>New Python Module...</b> from the pull-down menu of JeVois Inventor (or press `CTRL-N`).
+- 从 JeVois Inventor 的下拉菜单中选择<b>新建 Python 模块...</b>（或按 `CTRL-N`）。
 
-- Fill in the details as shown below:
+- 填写如下所示的详细信息：
   
-  \jvimg{tesseract1.png, 40%}
+  \jvimg{tesseract1.png, 40%} 
   
-  So, here we have decided to have a 60-pixel-tall area below the input image, where we will write the decoded text.
+  因此，我们决定在输入图像下方留出一个 60 像素高的区域，我们将在其中写入解码后的文本。
 
-- Allow JeVois to restart, select your new module from the <b>Vision Module</b> pull-down menu, and switch to the
-  <b>Code</b> tab of the Inventor.
+- 允许 JeVois 重新启动，从 <b>Vision Module</b> 下拉菜单中选择新模块，然后切换到 Inventor 的 <b>Code</b> 选项卡。
 
-Writing the code
+编写代码 
 ----------------
 
-A bit of web search for \a OpenCV and \a Tesseract gets us to
-https://docs.opencv.org/3.4/d7/ddc/classcv_1_1text_1_1OCRTesseract.html which we will use to get our code going.
+在网上搜索 \a OpenCV 和 \a Tesseract 可以让我们找到 https://docs.opencv.org/3.4/d7/ddc/classcv_1_1text_1_1OCRTesseract.html，我们将使用它来运行我们的代码。
 
-Basically, we need to create an OCR object (which we should do only once, hence we will do that in the constructor of
-our module), and then we will call `run()` on it with an image and a confidence level as inputs, getting decoded text
-(if any) as a result. We can finally send that text to serial and also write it into our output display.
+基本上，我们需要创建一个 OCR 对象（我们只需创建一次，因此我们将在模块的构造函数中执行此操作），然后我们将使用图像和置信度作为输入对其调用 `run()`，从而获得解码后的文本（如果有）。我们最终可以将该文本发送到串行并将其写入我们的输出显示。
 
-First, let's get the OCR part done, just sending decoded text to serial port. Then we will worry about making the
-composite display later.
+首先，让我们完成 OCR 部分，只需将解码后的文本发送到串行端口即可。然后我们稍后再考虑制作复合显示器。
 
 \code{.py}
 import libjevois as jevois
@@ -54,24 +47,19 @@ class TesseractOCR:
         outframe.sendCv(img)
 \endcode
 
-Enable <b>Module output</b> to \b USB in the \b Console tab of the Inventor and... This is working!
+在 Inventor 的 \b Console 选项卡中启用<b>模块输出</b>到 \b USB ，然后……一切正常！
 
 \jvimg{tesseract4.png, 70%}
 
-\note Note that the OpenCV OCR module is intended (as we understand it) to be run on small, pre-segmented boxes that
-each is likely to contain only one word and minimal surrounding garbage. This is usually accomplished by some <em>scene
-text</em> algorithm that is responsible for finding and extracting those boxes. Here, we bypass this step and just send
-the whole image to OCR. Because of this:
-- the algorithm is very slow as we process a whole 320x240 image
-- if multiple words are presented, the output shows them concatenated into one
-- if garbage is present, it may be decoded as text (as shown in the above log: often the garbage markings below the
-word Robotics are decoded into something, with varying success...
+\note 请注意，OpenCV OCR 模块旨在（据我们了解）在小型、预分割的框上运行，每个框可能只包含一个单词和最少的周围垃圾。这通常由负责查找和提取这些框的一些 <em>scene text</em> 算法完成。在这里，我们绕过此步骤，只将整个图像发送到 OCR。因为：
+- 算法非常慢，因为我们处理整个 320x240 图像
+- 如果出现多个单词，输出将显示它们连接成一个
+- 如果存在垃圾，则可能将其解码为文本（如上面的日志所示：通常 Robotics 单词下方的垃圾标记被解码成某种东西，成功率各不相同...
 
-Adding the composite display output
+添加复合显示输出 
 -----------------------------------
 
-We now just add a few lines of code to render the decoded text into a small message area below the video frame, and to
-stack both images up, as in \ref ProgrammerInvComposite
+现在，我们只需添加几行代码，将解码后的文本渲染到视频帧下方的小消息区域中，并将两个图像堆叠起来，如 \ref ProgrammerInvComposite
 
 \code{.py}
 import libjevois as jevois
@@ -100,13 +88,12 @@ Here we go!
 \jvimg{tesseract3.png, 70%}
 
 
-Going further
+进一步 
 -------------
 
-As mentioned above, better results will be obtained by implementing a pipeline that first extracts candidate boxes
-around each word, then sends each box to OCR (which can be parallelized over multiple boxes).
+如上所述，通过实现一个管道，首先提取每个单词周围的候选框，然后将每个框发送到 OCR（可以在多个框上并行化），将获得更好的结果。
 
-See for example https://github.com/opencv/opencv_contrib/blob/master/modules/text/samples/end_to_end_recognition.cpp
-(but it is written in C++, so some work will be needed to translate to python if desired).
+例如，请参阅 https://github.com/opencv/opencv_contrib/blob/master/modules/text/samples/end_to_end_recognition.cpp （但它是用 C++ 编写的，因此如果需要，需要做一些工作才能转换成 python）。
 
 */
+

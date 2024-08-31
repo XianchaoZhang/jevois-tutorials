@@ -1,91 +1,75 @@
-/*! \page ProgrammerPythonLive Programming a live JeVois camera using Python
+/*! \page ProgrammerPythonLive 使用 Python 编程实时 JeVois 相机
 
 
-In this tutorial, we modify some existing sandbox machine vision module written in Python and already pre-installed on
-the standard JeVois microSD image. We do this by accessing the microSD inside JeVois live over the USB connection.
+在本教程中，我们修改了一些现有的用 Python 编写的沙盒机器视觉模块，这些模块已预装在标准 JeVois microSD 映像上。我们通过 USB 连接实时访问 JeVois 内的 microSD 来实现这一点。
 
-For this tutorial, you do not need to install any software (except for a video capture program, if you do not already
-have one): We will directly edit the Python code on the microSD card that is inside JeVois.
+对于本教程，您不需要安装任何软件（如果您还没有，则视频捕获程序除外）：我们将直接在 JeVois 内部的 microSD 卡上编辑 Python 代码。
 
-Preliminaries
+准备工作 
 -------------
 
-- Get the latest microSD image from [JeVois start](http://jevois.org/start)
-- Review the \ref UserTutorials so you know how to:
-  + Flash the latest microSD image to a physical card
-  + Connect JeVois to a host computer and power it up
-  + Grab video from JeVois and select different resolutions
-  + Communicate with JeVois using a serial-over-USB link, and use the JeVois command-line interface
-- Be sure to go through the \ref Programmer to understand the basic concepts.
-- Go through \ref ProgrammerPython
-- And finally check out \ref ModulePythonTutorial
+- 从 [JeVois start](http://jevois.org/start) 获取最新的 microSD 映像
+- 查看 \ref UserTutorials ，了解如何：
+  + 将最新的 microSD 映像刷入物理卡
+  + 将 JeVois 连接到主机并启动
+  + 从 JeVois 抓取视频并选择不同的分辨率
+  + 使用串行 USB 链接与 JeVois 通信，并使用 JeVois 命令行界面
+- 请务必阅读 \ref Programmer 以了解基本概念。
+- 阅读 \ref ProgrammerPython
+- 最后查看 \ref ModulePythonTutorial
 
-Here, we will focus on step-by-step instructions for how to make all of this work.
+在这里，我们将重点介绍如何完成所有这些工作的逐步说明。
 
 Getting started
 ---------------
 
-- Connect JeVois to your host with the latest microSD image inside
+- 将 JeVois 连接到您的主机，其中包含最新的 microSD 映像
 
-- Start your video grabber and select resolution <b>YUYV 352x288 \@ 30fps</b> which starts the \ref PythonSandbox
-  module. By default this module computes the Laplacian of the input video image and streams the results to USB. It is
-  pretty much identical to the sandbox module covered in \ref ModulePythonTutorial. You should see something like this:
+- 启动视频抓取器并选择分辨率 <b>YUYV 352x288 \@ 30fps</b>，这将启动 \ref PythonSandbox 模块。默认情况下，此模块计算输入视频图像的拉普拉斯算子并将结果传输到 USB。它与 \ref ModulePythonTutorial 中介绍的沙盒模块几乎完全相同。您应该看到类似这样的内容：
   \image html PythonSandbox1.png
 
-- The basic workflow for live editing of machine vision modules on JeVois is as follows:
-  + Stop grabbing video
-  + Instruct JeVois to export its microSD card as a virtual USB drive
-  + Browse the virtual USB drive on the host computer
-  + Open the Python source code on that USB drive using a text editor
-  + Modify the code and save
-  + Eject the virtual USB drive. Upon eject, JeVois will restart and when it comes back online we
-    can check the results of our edits by starting the video capture software again.
+- JeVois 上实时编辑机器视觉模块的基本工作流程如下：
+  + 停止抓取视频
+  + 指示 JeVois 将其 microSD 卡导出为虚拟 USB 驱动器
+  + 在主机上浏览虚拟 USB 驱动器
+  + 使用文本编辑器打开该 USB 驱动器上的 Python 源代码
+  + 修改代码并保存
+  + 弹出虚拟 USB 驱动器。弹出后，JeVois 将重新启动，当它重新上线时，我们可以通过再次启动视频捕获软件来检查编辑结果。
 
-- Let's do this! First, quit your video capture software. This is necessary as JeVois will refuse to export its microSD
-  as a virtual USB drive while video is streaming. The reason for that is that accessing that drive at the same time by
-  the JeVois CPU and the host computer poses datacoherency and caching problems. So we shutdown all machine vision
-  modules on JeVois before exporting the microSD over USB.
+- 让我们开始吧！首先，退出视频捕获软件。这是必要的，因为在视频流式传输时，JeVois 将拒绝将其 microSD 导出为虚拟 USB 驱动器。原因是 JeVois CPU 和主机同时访问该驱动器会带来数据一致性和缓存问题。因此，我们在通过 USB 导出 microSD 之前关闭 JeVois 上的所有机器视觉模块。
 
-- We need to send the command \c usbsd to JeVois over a serial link to let it know that we want to export the microSD
-  over USB. You can do that by first connecting to JeVois using a serial terminal and then typing this command. For
-  example, use the Arduino IDE to connect, as done in \ref UserArduinoIDE.
+- 我们需要通过串行链路向 JeVois 发送命令 \c usbsd ，让它知道我们想要通过 USB 导出 microSD。您可以先使用串行终端连接到 JeVois，然后输入此命令。例如，使用 Arduino IDE 进行连接，如 \ref UserArduinoIDE 中所述。
 
-  Here, since we only want to give that one command to JeVois, we can instead do:
+  在这里，因为我们只想向 JeVois 发出一个命令，所以我们可以这样做：
 
-  + Linux: `sudo sh -c 'echo usbsd > /dev/ttyACM0'` or, with \jvversion{1.3} or later, you can type, directly in a Linux
-    terminal on your host (not in a serial communication software):
-    - `jevois-usbsd start` (to export it),
-    - `jevois-usbsd stop` (to eject and reboot JeVois).
-  + Mac OSX: `echo usbsd > /dev/cu.usbmodem*`
-  + Windows: FIXME anyone can contribute a short command? Just use a serial terminal like Termite, Ardiuno IDE, etc
-    for now.
+  + Linux： `sudo sh -c 'echo usbsd > /dev/ttyACM0'`  或者，使用 \jvversion{1.3} 或更高版本，您可以直接在主机上的 Linux 终端中输入（而不是在串行通信软件中）：
+    - `jevois-usbsd start`（导出它），
+    - `jevois-usbsd stop`（弹出并重新启动 JeVois）。
+  + Mac OSX：`echo usbsd > /dev/cu.usbmodem*`
+  + Windows：FIXME 有人可以贡献一个简短的命令吗？现在只需使用串行终端，如 Termite、Ardiuno IDE 等。
 
-  Here is the result on a Mac:
+  以下是 Mac 上的结果：
   \image html PythonSandbox2.png
 
-- Find \b PythonSandbox.py under <b>JEVOIS:/modules/JeVois/PythonSandbox</b> and open it (on my Mac, double-click opens
-  it in Emacs).
+- 在 <b>JEVOIS:/modules/JeVois/PythonSandbox</b> 下找到 \b PythonSandbox.py 并打开它（在我的 Mac 上，双击即可在 Emacs 中打开它）。
 
-- Let us edit the critical line, which computes the Laplacian (line 59). Let us change the \b ksize parameter a bit,
-  to 3:
+- 让我们编辑计算拉普拉斯算子的关键行（第 59 行）。让我们将 \b ksize 参数稍微更改为 3：
   \verbatim
         outimg = cv2.Laplacian(inimg, -1, ksize=3, scale=0.25, delta=127)
   \endverbatim
-  and save the file.
+  并保存文件。
 
-- Properly eject the JEVOIS drive (drag to trash, click eject button, etc) and watch the LED on your camera:
-  + Blinks off - shutdown complete, restarting
-  + Solid green - reboot starts
-  + Orange blink - camera sensor detected
-  + Solid orange - ready for action
+- 正确弹出 JEVOIS 驱动器（拖到废纸篓、单击弹出按钮等）并观察相机上的 LED：
+  + Blinks off - 关机完成，正在重新启动
+  + 常亮绿色 - 开始重新启动
+  + 橙色闪烁 - 检测到相机传感器
+  + 常亮橙色 - 准备就绪
 
-- Start your video capture software again once JeVois is ready, and observe the results:
-  \image html PythonSandbox3.png
-  Subtle but clear differences compared to what the module used to do.
+- JeVois 准备就绪后，再次启动视频捕获软件，并观察结果：
+  \image html PythonSandbox3.png 
+  与模块以前的操作相比，存在细微但明显的差异。
 
-- Let's compute something else than the Laplacian. Quit your video capture program, issue the \c usbsd command, edit
-  the file, and change line 59 to instead implement a color object tracker (threshold on colors), as explained at:
-  http://docs.opencv.org/trunk/df/d9d/tutorial_py_colorspaces.html
+- 让我们计算一些除拉普拉斯算子之外的东西。退出视频捕获程序，发出 \c usbsd 命令，编辑文件，然后更改第 59 行以实现颜色对象跟踪器（颜色阈值），如以下网址所述：http://docs.opencv.org/trunk/df/d9d/tutorial_py_colorspaces.html
 
   \code{.py}
     # Convert BGR to HSV
@@ -101,29 +85,26 @@ Getting started
     # Bitwise-AND mask and original image
     outimg = cv2.bitwise_and(inimg, inimg, mask= mask)
   \endcode
-  Make sure your indentation is correct as Python is picky about that. The lines you paste in place of the old line 59
-  should be indented by the same amount as the lines immediatly above and below.
+  确保您的缩进正确，因为 Python 对此很挑剔。您粘贴到旧第 59 行的行应与上下两行的缩进量相同。
 
-  Here is the result (you need to show a blue object to JeVois, here we showed our favorite USB flash drive):
-  \image html PythonSandbox4.png
-  We now have something that is beginning to ressemble the basic color tracker of \ref UserColorTracking, in just a
-  few lines of Python code.
+  结果如下（你需要向 JeVois 显示一个蓝色物体，这里我们显示了我们最喜欢的 USB 闪存驱动器）：
+  \image html PythonSandbox4.png 
+  现在我们有了一些开始类似于 \ref UserColorTracking 的基本颜色跟踪器的东西，只需几行 Python 代码。
 
-Errors
+错误 
 ------
 
-As always, you can connect to JeVois using the serial-over-USB port and issue a `setpar serlog USB` to see any error
-messages that might occur if your code has mistakes.
+与往常一样，您可以使用串行 USB 端口连接到 JeVois 并发出 `setpar serlog USB` 以查看代码有错误时可能出现的任何错误消息。
 
-In addition, we have worked very hard to add a new feature that displays these errors directly in the video stream. For
-example, insert the line:
+此外，我们努力添加了一个新功能，可直接在视频流中显示这些错误。例如，在第 59 行插入行：
 \verbatim
       boo
 \endverbatim
-say, at line 59. Then try to capture video from JeVois, you should see:
+say, at line 59. 然后尝试从 JeVois 捕获视频，您应该会看到：
 
 \image html PythonSandbox5.png
 
 
 
 */
+

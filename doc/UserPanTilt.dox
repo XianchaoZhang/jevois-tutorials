@@ -1,351 +1,267 @@
-/*! \page UserPanTilt Making a motorized pan-tilt head for JeVois and tracking objects
+/*! \page UserPanTilt 为 JeVois 制作电动云台并跟踪物体
 
 
-Several JeVois machine vision modules detect and locate target objects in video, either based on their visual salience,
-on a specific color, on a specific type of shape (e.g., ArUco marker), or on a generic learned appearance. Some of these
-modules issue messages to the JeVois serial ports that indicate the coordinates of the objects that were found (and
-adding such messages to those which do not yet send them is a simple modification).
+多个 JeVois 机器视觉模块可以根据目标物体的视觉显著性、特定颜色、特定形状（例如 ArUco 标记）或通用学习外观来检测和定位视频中的目标物体。其中一些模块向 JeVois 串行端口发送消息，指示已找到的物体的坐标（将此类消息添加到尚未发送消息的模块中是一个简单的修改）。
 
-In this tutorial, we use a motorized pan-tilt head and a small Arduino-compatible board to control the pan-tilt head, so
-that it will always try to center the detected object in the camera's field of view. That is, we will use the
-coordinates issued by JeVois, to counter-rotate the pan-tilt head (onto which JeVois should be mounted) so as to center
-the objects of interest. The net effect will be that JeVois mounted on the pan-tilt head will track the objects of
-interest.
+在本教程中，我们使用电动云台和小型 Arduino 兼容板来控制云台，以便它始终尝试将检测到的物体置于相机视野的中心。也就是说，我们将使用 JeVois 发出的坐标来反向旋转云台（应将 JeVois 安装到云台上），以便将感兴趣的物体置于中心。最终结果是安装在云台上的 JeVois 将跟踪感兴趣的物体。
 
-This tutorial is a direct extension, with more details, step-by-step instructions, and with pictures, of the \ref
-ArduinoTutorial in the main JeVois documentation.
+本教程是 JeVois 主文档中 \ref ArduinoTutorial 的直接扩展，包含更多详细信息、分步说明和图片。
 
 Getting started
 ---------------
 
-For this tutorial, we will use:
+在本教程中，我们将使用：
 
-- one JeVois smart camera;
-- one pan/tilt head actuated by two standard servo-motors (bought on eBay or any robotics shop);
-- one Arduino-compatible board with a 5V, 16MHz Atmega32u4 microcontroller. We use [this specific one]
-(https://www.jevoisinc.com/collections/accessories/products/atmega32u4-16mhz-5v-arduino-compatible-micro-controller);
-- one 5V power supply rated at least 2A for the servos.
+- 一台 JeVois 智能相机；
+- 一个由两个标准伺服电机驱动的云台（可在 eBay 或任何机器人商店购买）；
+- 一块 Arduino 兼容电路板，配有 5V、16MHz Atmega32u4 微控制器。我们使用 [这个特定的] (https://www.jevoisinc.com/collections/accessories/products/atmega32u4-16mhz-5v-arduino-compatible-micro-controller)；
+- 一个额定电流至少为 2A 的 5V 电源，用于伺服电机。
 
 \image html UserPanTiltMaterials.jpg
 
-Basic plan of attack
+基本攻击计划 
 --------------------
 
-- We will power JeVois from a host computer using a mini-USB cable that will also let us see video from JeVois.
+- 我们将使用微型 USB 电缆从主机为 JeVois 供电，这样我们也能看见来自 JeVois 的视频。
 
-- We will power the servos and the Arduino board from the 5V power supply.
+- 我们将通过 5V 电源为伺服器和 Arduino 开发板供电。
 
-- We will connect the JeVois serial port (see \ref UserSerial) to the Arduino's hardware serial port (pins TX1 and
-  RX0). On the Atmega 32u4, these pins are referred to as the \b Serial1 port.
+- 我们将 JeVois 串行端口（参见 \ref UserSerial ）连接到 Arduino 的硬件串行端口（引脚 TX1 和 RX0）。在 Atmega 32u4 上，这些引脚称为 \b Serial1 端口。
 
-- JeVois will send the coordinates of detected objects to the serial port.
+- JeVois 将把检测到的物体的坐标发送到串行端口。
 
-- The Arduino will receive the coordinates and will pan and tilt the head so as to try to center the object in the field
-  of view. That is, it will track the object.
+- Arduino 将接收坐标，并平移和倾斜云台，以尝试将物体置于视野的中心。也就是说，它将跟踪物体。
 
-Hardware work
+硬件工作 
 -------------
 
-- Assemble your pan-tilt head. Follow the instructions that came with it. This can take a while depending on which model
-  you used.
+- 组装云台。按照随附的说明进行操作。这可能需要一段时间，具体取决于您使用的型号。
 
-- Get the [JeVois mounting template](http://jevois.org/data/jevois-dimensions.pdf) and print it at 100% scale.
+- 获取 [JeVois 安装模板](http://jevois.org/data/jevois-dimensions.pdf) 并以 100% 比例打印。
 
-- Cut out one of the pictures in the template in which you can see the 4 mounting holes on the underside of JeVois.
+- 剪下模板中的一张图片，您可以在其中看到 JeVois 底面上的 4 个安装孔。
 
-- Place the template on your pan-tilt head and drill 4 holes with a drill bit that is about 3mm in
-  diameter. Alternatively, use the patterns described in \ref CaseMounting to place your mounting holes.
+- 将模板放在云台上，用直径约 3 毫米的钻头钻 4 个孔。或者，使用 \ref CaseMounting 中描述的图案来放置安装孔。
 
   \image html UserPanTiltTemplate.jpg
   \image html UserPanTiltDrill.jpg
 
-- Find 4 screws (M2.5 or USA 2-56 recommended) with a length chosen so that they stick out by 5mm (not more!) through
-  the mounting plate.
+- 找到 4 颗螺丝（建议使用 M2.5 或 USA 2-56），选择合适的长度，使它们从安装板上伸出 5 毫米（不要更多！）。
 
   \image html UserPanTiltScrews.jpg
 
-- Screw your JeVois smart camera to the mounting plate. As you hold your JeVois smart camera while you also thread the
-  screws in, always remember to never push onto the center of the fan of JeVois (see \ref Handling). Do not over-tighten
-  or you will just end up making big holes in the feet of your JeVois and you will then just need to try again, with
-  bigger diameter screws.
+- 将 JeVois 智能相机拧到安装板上。在握住 JeVois 智能相机的同时拧入螺丝时，请务必记住不要推到 JeVois 风扇的中心（请参阅 \ref Handling ）。不要拧得太紧，否则您最终会在 JeVois 的脚上打出大洞，然后您只需要再试一次，使用更大直径的螺丝。
 
   \image html UserPanTiltMounted.jpg
   \image html UserPanTiltCamera.jpg
 
-- Connect your JeVois micro-serial cable to your Arduino board as explained in \ref UserSerial. On our small ProMicro
-  board used here, there is no IOREF pin, so we just use VCC instead to provide a reference 5V voltage to JeVois, to be
-  used as the level at which serial communications will operate.
+- 按照 \ref UserSerial 中的说明，将您的 JeVois 微型串行电缆连接到您的 Arduino 开发板。在我们这里使用的小型 ProMicro 开发板上，没有 IOREF 引脚，因此我们只是使用 VCC 为 JeVois 提供参考 5V 电压，用作串行通信运行的电平。
 
-- Connect two wires to power your Arduino. Here we will use one black wire to GND and one red wire to VCC (since we will
-  use a clean 5V power supply, we provide it directly to the Arduino's VCC and we bypass the RAW voltage
-  input). Alternatively, you can power your Arduino from its micro-USB port (which we will do during programming), or
-  you could use a 6V power supply (which will make your servos operate faster) and then connect that 6V to the RAW
-  voltage supply pin of your Arduino (check specs of your Arduino to be sure).
+- 连接两根电线为 Arduino 供电。这里我们将使用一根黑线连接到 GND，一根红线连接到 VCC（因为我们将使用干净的 5V 电源，我们将其直接提供给 Arduino 的 VCC，并绕过 RAW 电压输入）。或者，您可以从 Arduino 的微型 USB 端口为其供电（我们将在编程期间这样做），或者您可以使用 6V 电源（这将使您的伺服器运行得更快），然后将该 6V 连接到 Arduino 的 RAW 电压供应引脚（检查 Arduino 的规格以确保无误）。
 
-  \image html UserPanTiltArdu1.jpg
+\image html UserPanTiltArdu1.jpg
 
-- Following the \ref ArduinoTutorial, here we will connect the control line (yellow wire on our servos) of the pan servo
-  to Arduino pin 3, and the control line of the tilt servo to pin 5. Any Arduino pin that supports PWM output would work
-  (but you need to modify the Arduino code accordingly).
+- 按照 \ref ArduinoTutorial ，我们将在这里将平移伺服的控制线（伺服器上的黄线）连接到 Arduino 引脚 3，将倾斜伺服的控制线连接到引脚 5。任何支持 PWM 输出的 Arduino 引脚都可以使用（但您需要相应地修改 Arduino 代码）。
 
   \image html UserPanTiltArdu2.jpg
   \image html UserPanTiltArdu3.jpg
 
-- Connect 4 power wires together: 1 from the power supply, two for the servos, and one for the Arduino. Repeat for the 4
-  ground wires.
+- 将 4 根电源线连接在一起：1 根来自电源，2 根用于伺服器，1 根用于 Arduino。对 4 根接地线重复上述操作。
 
   \image html UserPanTiltArdu4.jpg
 
-- Insulate using heat-shrink tubing to make sure there will be no shorts as this contraption starts jerking around at
-  high speeds.
+- 使用热缩管进行绝缘，以确保当该装置开始高速晃动时不会发生短路。
 
   \image html UserPanTiltArdu5.jpg
 
-- Here, since we have so much room on the pan-tilt platform, we just tape the Arduino to is using double-stick tape (of
-  the foamy type, for example Scotch 110P or 3M 4016). Just make sure you can still plug-in a micro-USB connector to
-  program it. Here, we also use a zip tie through two holes that already were on the side of our pan-tilt head, to
-  bundle and hold all the wires, so that we provide some strain relief (the solder joints will not be pulled upon as the
-  head moves).
+- 在这里，由于我们在云台平台上有足够的空间，我们只需使用双面胶带（泡沫类型，例如 Scotch 110P 或 3M 4016）将 Arduino 粘贴在上面即可。只需确保您仍然可以插入微型 USB 连接器来对其进行编程。在这里，我们还使用扎带穿过云台头侧面的两个孔，捆绑并固定所有电线，以便提供一些应力消除（头部移动时不会拉动焊点）。
 
   \image html UserPanTiltFinal.jpg
 
-- Plug in and check for sparks, burning smell, etc. If everything is quiet, you are ready to move on to the next step.
+- 插上电源并检查是否有火花、烧焦气味等。如果一切正常，即可继续下一步。
 
-Programming the Arduino
+对 Arduino 进行编程 
 -----------------------
 
-- Launch the Arduino software
+- 启动 Arduino 软件
 
-- Cut and paste the code below into the Arduino editor.
+- 将下面的代码剪切并粘贴到 Arduino 编辑器中。
 
-- Power your pan-tilt head and connect its Arduino to your programming desktop using a micro-USB cable. 
+- 为您的云台供电，并使用微型 USB 线将其 Arduino 连接到您的编程桌面。
 
-- Select the correct target board (ours is compatible with Arduino Leonardo) and programming port (ours is the Leonardo
-  direct programming). Compile and upload the software to your Arduino.  \warning Your servos will move to their home
-  position as soon as programming is complete, just be prepared for that.
+- 选择正确的目标板（我们的目标板与 Arduino Leonardo 兼容）和编程端口（我们的是 Leonardo 直接编程）。编译并将软件上传到您的 Arduino。\warning 编程完成后，您的伺服器将立即移动到其原位，请做好准备。
 
-- Disconnect your programming computer. Power off your pan-tilt head for now.
+- 断开编程计算机。暂时关闭云台电源。
 
 \includelineno ArduinoPanTiltTutorial.C
 
-Arduino code analysis
+Arduino代码分析
 ---------------------
 
-- Line 10: Make sure you select the correct serial port. On an Atmega 32u4 (used here), pins 0 and 1 are handled by \b
-  Serial1 (since \b Serial is for the USB serial port). On Arduino Uno and similar, you would use \b Serial instead.
+- 第 10 行：确保选择正确的串行端口。在 Atmega 32u4（此处使用）上，引脚 0 和 1 由 \b Serial1 处理（因为 \b Serial 用于 USB 串行端口）。在 Arduino Uno 和类似产品上，您应改用 \b Serial 。
 
-- Lines 31 - 45: We initialize the serial port, LED, and servos. We send a couple of commands to JeVois to instruct it
-  to send \c serout messages to us and \c serlog messages to nobody.
+- 第 31 至 45 行：我们初始化串行端口、LED 和伺服器。我们向 JeVois 发送几个命令，指示它向我们发送 \c serout 消息，向 nobody 发送 \c serlog 消息。
 
-- Line 49: We read a serial string until an end-of-line marker.
+- 第 49 行：我们读取一个串行字符串，直到行尾标记。
 
-- Line 52: We split the first token from the received line, using space or some end of line character as token
-  delimiter.
+- 第 52 行：我们从接收的行中分割第一个标记，使用空格或某些行尾字符作为标记分隔符。
 
-- Line 54: We iterate over all tokens contained in the line. We will parse each token according to our current state in
-  a simple state machine. The states are described in lines 56-67. We start in state 0.
+- 第 54 行：我们迭代该行中包含的所有标记。我们将根据简单状态机中的当前状态解析每个标记。状态在第 56-67 行中描述。我们从状态 0 开始。
 
-- Lines 68-84: Depending on state, we decode either a command or a number, and we switch to the appropriate next state,
-  depending on what we have decoded so far.
+- 第 68-84 行：根据状态，我们解码命令或数字，并根据迄今为止解码的内容切换到适当的下一个状态。
 
-- Lines 89-94: We update the pan angle if the received command contained a pan value. We update the angle by a small
-  fraction of the target X coordinate that was received, so that the head will move slightly towards the target. We do
-  not move fully towards the target because that would move the head too fast given that serial commands are going to be
-  received at 30Hz, 60Hz or more (see comments in lines 19-22).
+- 第 89-94 行：如果收到的命令包含平移值，我们将更新平移角度。我们将角度更新为收到的目标 X 坐标的一小部分，这样头部就会稍微向目标移动。我们不会完全向目标移动，因为考虑到串行命令将以 30Hz、60Hz 或更高的频率接收，这会使头部移动得太快（参见第 19-22 行中的注释）。
 
-- Lines 96-101: Idem for tilt.
+- 第 96-101 行：倾斜同上。
 
-Tuning the pan-tilt head servo directions
+调整云台伺服方向 
 -----------------------------------------
 
-Depending on the construction of your pan-tilt head, increasing the pan angle may turn the head rightwards or leftwards,
-and, likewise, increasing the tilt angle could turn the head up or down. To figure this out, we will first connect to
-the pan-tilt head manually. We will send hand-written commands to the head.
+根据云台的结构，增加平移角度可能会使云台向右或向左转动，同样，增加倾斜角度可能会使云台向上或向下转动。为了弄清楚这一点，我们首先要手动连接云台。我们将向云台发送手写命令。
 
-Before you start this, make sure you understand the following:
+在开始之前，请确保您了解以下内容：
 
-- JeVois standardized coordinates. These are explained in \ref coordhelpers and are used by modules which output object
-  coordinates over serial. The goal of using a standardized coordinate system is so that you do not have to modify your
-  Arduino code when you change video resolution in JeVois.
+- JeVois 标准化坐标。这些在 \ref coordhelpers 中有说明，并由通过串行输出对象坐标的模块使用。使用标准化坐标系的目的是，当您在 JeVois 中更改视频分辨率时，您不必修改 Arduino 代码。
 
-- \ref UserCli, and, in particular:
-  + Talking to JeVois using the serial-over-USB port
-  + The \p serout and \p serlog parameters
-  + The \c serout and \c serlog commands
+- \ref UserCli ，特别是：
+  + 使用串行 USB 端口与 JeVois 通信
+  + \p serout 和 \p serlog 参数
+  + \c serout 和 \c serlog 命令
 
-Now let's try the following:
+现在让我们尝试以下操作：
 
-- Connect a mini-USB cable from a host computer to JeVois. Allow JeVois to boot up.
+- 将主机的 mini-USB 线连接到 JeVois。允许 JeVois 启动。
 
-- Do not start a video capture software yet. Instead, connect to JeVois over the serial-over-USB connection.
+- 暂时不要启动视频捕捉软件。相反，通过 USB 串行连接来连接到 JeVois。
 
-- Issue the following command to configure the \b serout port to be the hardware 4-pin port of JeVois:
+- 发出以下命令将 \b serout 端口配置为 JeVois 的硬件 4 针端口：
 
 \verbatim
 setpar serout Hard
 \endverbatim
 
-- Now let's move the pan-tilt head by hand. By default, it homes to standardized coordinates (0, 0). If we ask it to
-  move to, say, (1000, 0), it should turn rightward. We will do that by using the \c serout command, which just forwards
-  everything that is passed to it directly to the \b serout port. Hence, everything we type in a \c serout command will
-  be sent to our Arduino.
+- 现在让我们手动移动云台。默认情况下，它会回到标准坐标 (0, 0)。如果我们要求它移动到 (1000, 0)，它应该向右转动。我们将使用 \c serout 命令来执行此操作，该命令会将传递给它的所有内容直接转发到 \b serout 端口。因此，我们在 \c serout 命令中输入的所有内容都将发送到我们的 Arduino。
 
-  Note that the Arduino pan-tilt code is written to apply a small \a relative offset to a memorized pan-tilt location
-  each time a serial command is received. Indeed, because the Arduino code will receive target coordinates up to 60
-  times per second, it would be too jerky to try each time to fully home onto the target. So, instead, the pan-tilt head
-  will take a small step towards the target. The size of these steps is regulated by two control parameters in the
-  Arduino code, \p PANGAIN and \p TILTGAIN, with default values of 100. Higher gain values will move the head more
-  rapidly towards the target on each video frame.
+  请注意，Arduino 云台代码被编写为每次收到串行命令时，都会将一个小的 \a relative 偏移应用于记忆的云台位置。事实上，由于 Arduino 代码每秒最多会接收 60 次目标坐标，因此每次尝试完全回到目标会过于不稳定。因此，云台会向目标迈出一小步。这些步骤的大小由 Arduino 代码中的两个控制参数 \p PANGAIN 和 \p TILTGAIN 控制，默认值为 100。更高的增益值将使云台在每个视频帧上更快地向目标移动。
 
 \verbatim
 serout T2 10000 0
 \endverbatim
 
-As the command is received, the pan-tilt head should turn right by some amount. If it turns left, your pan gain should
-be negated. The Arduino code supports two commands, in addition to T2: \c PANGAIN and \c TILTGAIN. You can negate \c
-PANGAIN as follows if your pan-tilt head just turned left:
+收到命令后，云台应该向右转动一定量。如果向左转动，则云台增益应该被否定。除 T2 外，Arduino 代码还支持两个命令：\c PANGAIN 和 \c TILTGAIN。如果云台刚向左转动，则可以按如下方式否定 \c PANGAIN：
 
 \verbatim
 serout PANGAIN -100
 \endverbatim
 
-Then try again
+然后重试 
 \verbatim
 serout T2 10000 0
 \endverbatim
 
-and the camera should now pan in the other direction than previously.
+并且摄像机现在应该朝与之前不同的方向平移。
 
-- Repeat this process to adjust the tilt direction, now using commands like:
+- 重复此过程来调整倾斜方向，现在使用如下命令：
 
 \verbatim
 serout T2 0 10000
 \endverbatim
 
-to tilt the camera up, and 
+将相机向上倾斜，然后
 
 \verbatim
 serout TILTGAIN -100
 \endverbatim
 
-Once you are done playing, make a note of what you did and you can later put these commands in a \b script.cfg file in
-the directory of the machine vision module you will be using (see how we did that in \ref ArduinoTutorial).
+一旦完成操作，请记下您所做的事情，然后您可以将这些命令放在您将要使用的机器视觉模块目录中的 \b script.cfg 文件中（请参阅我们在 \ref ArduinoTutorial 中如何执行此操作）。
 
 
-Let's rock
+开始狂欢吧  
 ----------
 
-We are ready to get that pan-tilt head controlled by JeVois.
+我们准备让 JeVois 来控制云台。
 
-- Connect a mini-USB cable from JeVois to a host computer. Start a video capture software. Select one of the following:
+- 将 JeVois 的 mini-USB 电缆连接到主机。启动视频捕获软件。选择以下之一：
   + YUYV 640x300 @ 60.0 fps - \jvmod{DemoSaliency}
-  + YUYV 320x254 @ 60.0 fps - Color-based \jvmod{ObjectTracker}
-  + YUYV 640x312 @ 50.0 fps - \jvmod{DemoSalGistFaceObj} Saliency + Gist + Face + object recognition
-  + any other that supports T2 or T1 serial outputs (see docs and/or source code and look for modules that support
-    standardized serial messages).
+  + YUYV 320x254 @ 60.0 fps - 基于颜色的 \jvmod{ObjectTracker}
+  + YUYV 640x312 @ 50.0 fps - \jvmod{DemoSalGistFaceObj} Saliency + Gist + Face + 对象识别
+  + 任何其他支持 T2 或 T1 串行输出的（请参阅文档和/或源代码并查找支持标准化串行消息的模块）。
 
-- Show some interesting object to JeVois and watch it track it.
+- 向 JeVois 展示一些有趣的物体并观察它追踪它。
 
-- You may want to increase the pan and tilt gains, which are very low by default. Higher values will move the pan-tilt
-  head faster, so that it can better track fast-moving objects. The downside is that noisy inputs will also give rise to
-  high jerky motions of the pan-tilt head.
+- 您可能需要增加平移和倾斜增益，默认情况下增益非常低。较高的值将使平移和倾斜头移动得更快，以便更好地跟踪快速移动的物体。缺点是噪声输入也会导致平移和倾斜头运动剧烈。
 
-  Try the following:
-  
+  尝试以下操作：
 \verbatim
 serout PANGAIN 500
 \endverbatim
 
-(or use -500 if you need a negative gain for your particular pan-tilt head). See how much faster the head can track now.
+（或者，如果您的特定云台需要负增益，则使用 -500）。查看云台现在的跟踪速度有多快。
 
 
 \youtube{3V3vsoQrFo0}
 
-Running with no USB output
+运行时没有 USB 输出 
 --------------------------
 
-Once you are comfortable with the operation of the algorithm, you can also try it as a true standalone machine vision
-system with no USB output. The steps are as follows:
+一旦您熟悉了算法的操作，您还可以尝试将其作为没有 USB 输出的真正的独立机器视觉系统。步骤如下：
 
-- Select a machine vision algorithm that supports processing with no USB output. Not all of them do. From the list of
-  \ref UserDemos, we can select, for example the \jvmod{ObjectTracker} and we see, towards
-  the top of the page:
+- 选择支持无 USB 输出处理的机器视觉算法。并非所有算法都支持。从 \ref UserDemos 列表中，我们可以选择 \jvmod{ObjectTracker}，然后我们在页面顶部看到：
   \verbatim
   Supports mappings with NO USB output:   Yes
-  \endverbatim
-  An example video mapping with no USB output (with \b NONE as USB pixel format) is also suggested:
+  \endverbatim 
+  还建议使用无 USB 输出的视频映射示例（\b NONE 作为 USB 像素格式）： 
   \verbatim
   Video Mapping:   NONE 0 0 0.0 YUYV 320 240 60.0 JeVois ObjectTracker
   \endverbatim
 
-- If you are operating in low light, you may want to select a lower framerate than the suggested 60fps, so that the
-  camera sensor will be allowed longer exposure time. Here we will use 30fps.
+- 如果您在弱光环境下操作，您可能需要选择低于建议的 60fps 的帧速率，以便相机传感器能够有更长的曝光时间。这里我们将使用 30fps。
 
-- Let us first try interactively:
-  + Power in the pan/tilt head
-  + Connect JeVois to your host computer and allow it to boot
-  + But do not start a video capture software
-  + Connect to the JeVois command line interface as we have done above.
-  + Issue the following:
+- 让我们首先尝试交互：
+  + 打开云台电源
+  + 将 JeVois 连接到主机并允许其启动
+  + 但不要启动视频捕获软件
+  + 按照上面所述连接到 JeVois 命令行界面。
+  + 发出以下命令：
+    \verbatim
+setmapping2 YUYV 320 240 30.0 JeVois ObjectTracker
+setpar serout Hard
+streamon
+    \endverbatim，
+  这将加载对象跟踪器模块并在无 USB 输出模式下运行。\c setmapping2 命令指示 JeVois 配置给定的相机像素格式、分辨率和帧速率，并从供应商 JeVois 加载模块 ObjectTracker。由于 \c setmapping2 未指定 USB 输出视频格式，因此模块将在没有 USB 视频输出的情况下运行。然后，我们在没有 USB 输出的情况下运行时使用 \c streamon 命令手动启动视频流，因为没有视频捕获软件可以启动它。有关 \c setmapping2 和 \c streamon 的详细信息，请参阅 \ref UserCli 。
+  + 在 JeVois 前面挥动一些先前检测到的物体，您的平移/倾斜云台应该会跟踪它。
+
+- 一旦完成，我们可以配置 JeVois 在启动时自动执行此操作：
+
+  + 假设您使用的是最新 microSD 映像，只需在命令行界面中输入 \c usbsd ，主机上就会出现一个名为 \b JEVOIS 的虚拟 USB 闪存驱动器。有关详细信息，请参阅页面底部的 \ref MicroSD 。
+  + 打开文件 <b>JEVOIS:/jevois/config/initscript.cfg</b> 并添加以下行：
     \verbatim
 setmapping2 YUYV 320 240 30.0 JeVois ObjectTracker
 setpar serout Hard
 streamon
     \endverbatim
-    which will load up the object tracker module and run it in the mode with no USB output. The \c setmapping2 command
-    instructs JeVois to configure a given camera pixel format, resolution, and framerate, and to load the module
-    ObjectTracker from Vendor JeVois. Because \c setmapping2 does not specify a USB output video format, the module will
-    run with no USB video output. We then manually initiate video streaming using the \c streamon command when running
-    with no USB output, because there is no video capture software that is going to initiate it. See \ref UserCli for
-    details on \c setmapping2 and \c streamon.
-  + Wave some object that was detected earlier in front of JeVois and your pan/tilt head should track it.
+    \b initscript.cfg 由 JeVois 在启动时执行。您可以将任何对 JeVois 的命令行界面有效的命令放入其中。
+  + 保存并关闭文件并弹出 JEVOIS 虚拟闪存驱动器（拖到垃圾箱、单击弹出按钮等）。JeVois 将重新启动。
+  + 几秒钟后，它现在应该以基于颜色的平移/倾斜控制启动，没有 USB 视频输出。
+  + 从此时起，您不再需要主机。您可以使用 USB 充电器、USB 电池组等为 JeVois 供电。
 
-- Once this works, we can configure JeVois to do this automatically at boot up:
-
-  + Assuming that you are using the latest microSD image, just type \c usbsd in the command line interface, and a
-    virtual USB flash drive named \b JEVOIS should appear on your host computer. See \ref MicroSD for details, towards
-    bottom of the page.
-  + Open the file <b>JEVOIS:/jevois/config/initscript.cfg</b> and add these lines:
-    \verbatim
-setmapping2 YUYV 320 240 30.0 JeVois ObjectTracker
-setpar serout Hard
-streamon
-    \endverbatim
-    \b initscript.cfg is executed by JeVois when it boots up. You can put in there any command that is valid for the
-    command-line interface of JeVois.
-  + Save and close the file and eject the JEVOIS virtual flash drive (drag to trash, click eject button, etc).
-    JeVois will reboot.
-  + After a few seconds, it should now start with the color-based pan/tilt control with no USB video output.
-  + From this point on, you do not need your host computer anymore. You can power JeVois from a USB charger, USB battery
-    bank, etc.
-
-\note Because we changed framerate here (from 60 fps while we were seeing the video over USB to 30 fps with no USB), the
-color tracking algorithm may need re-tuning. If it does not appear to track well, first try with 60 fps in your \c
-setmapping2 command, to match what we had before. You can then edit <b>JEVOIS:/config/videomapping.cfg</b> to change
-the framerate of the mode with USB output: Search for \b ObjectTracker and change this entry:
+\note 因为我们在这里更改了帧速率（从通过 USB 观看视频时的 60 fps 更改为不使用 USB 时的 30 fps），颜色跟踪算法可能需要重新调整。如果跟踪效果不佳，请首先在 \c setmapping2 命令中尝试使用 60 fps，以匹配我们之前的设置。然后，您可以编辑 <b>JEVOIS:/config/videomapping.cfg</b> 以更改 USB 输出模式的帧速率：搜索 \b ObjectTracker 并更改此条目：
 \verbatim
 YUYV 320 254 60.0 YUYV 320 240 60.0 JeVois ObjectTracker
 \endverbatim
 to
 \verbatim
 YUYV 320 254 30.0 YUYV 320 240 30.0 JeVois ObjectTracker
-\endverbatim
-and see \ref UserModes for details about the format of video mappings. Next time you start your video capture software,
-be sure to select YUYV 320x254 at 30 fps.  Then have a look at \ref UserColorTracking for tuning. You can save your
-tuned parameters to the file <b>JEVOIS:/modules/JeVois/ObjectTracker/script.cfg</b> as we did in this tutorial.
+\endverbatim 
+并参阅 \ref UserModes 了解有关视频映射格式的详细信息。下次启动视频捕获软件时，请务必选择 YUYV 320x254 和 30 fps。然后查看 \ref UserColorTracking 进行调整。您可以将调整后的参数保存到文件 <b>JEVOIS:/modules/JeVois/ObjectTracker/script.cfg</b> 中，就像我们在本教程中所做的那样。
 
 
-Additional activities
+其他活动 
 ---------------------
 
-- Try to play with the \c PANGAIN and \c TITLGAIN values. Notice how values that are too high will yield crazy
-  oscillations of the pan-tilt head. Indeed, we only use a proportional control of the head. As an exercise, think about
-  how you would modify the Arduino code to include a PID control (see for example
-  https://en.wikipedia.org/wiki/PID_controller).
+- 尝试使用 \c PANGAIN 和 \c TITLGAIN 值。请注意，过高的值会导致云台疯狂振荡。事实上，我们只使用云台的比例控制。作为练习，思考如何修改 Arduino 代码以包含 PID 控制（例如，请参阅 https://en.wikipedia.org/wiki/PID_controller）。
 
-- As an exercise, try to modify another module you like to have it also issue \b T2 messages. Have a look at how it is
-  done in, for example, \ref ObjectTracker using \ref coordhelpers and the helper functions to send serial messages
-  provided by jevois::StdModule, and try to replicate the commands in your new module.
+- 作为练习，尝试修改您喜欢的另一个模块，使其也发出 \b T2 消息。看看如何在 \ref ObjectTracker 中使用 \ref coordhelpers 和辅助函数发送 jevois::StdModule 提供的串行消息，并尝试在新模块中复制命令。
 
 */
 
